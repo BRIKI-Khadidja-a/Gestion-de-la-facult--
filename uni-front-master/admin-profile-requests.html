@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Gestion des demandes de modification de profil - Administration
+    </title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="style/admin.css" rel="stylesheet" />
+    <link href="style/section-statistics.css" rel="stylesheet" />
+    <script src="js/admin-api-config.js"></script>
+    <script src="js/admin-auth.js"></script>
+    <script src="js/admin-logout.js"></script>
+    <script src="js/admin-pages-validation.js"></script>
+    <script src="js/admin-mocks.js"></script>
+    <script src="js/admin-api-utils.js"></script>
+    <script src="js/admin-api-fetchers.js"></script>
+    <script src="js/admin-api-loader.js"></script>
+    <script src="js/section-statistics.js"></script>
+    <script src="js/profile-requests-handler.js"></script>
+    <!-- Chart.js for statistics visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Enhanced Base Styles */
+      :root {
+        --primary-color: #2563eb;
+        --primary-hover: #1d4ed8;
+        --success-color: #059669;
+        --success-hover: #047857;
+        --danger-color: #dc2626;
+        --danger-hover: #b91c1c;
+        --warning-color: #d97706;
+        --info-color: #0369a1;
+        --gray-color: #64748b;
+        --light-gray: #f1f5f9;
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --radius-sm: 0.375rem;
+        --radius: 0.5rem;
+        --radius-lg: 0.75rem;
+        --transition: all 0.2s ease-in-out;
+      }
+
+      /* Enhanced Button Styles */
+      .btn {
+        padding: 0.625rem 1.25rem;
+        border-radius: var(--radius);
+        font-weight: 500;
+        transition: var(--transition);
+        cursor: pointer;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-hover);
+      }
+
+      .btn-success {
+        background-color: var(--success-color);
+        color: white;
+      }
+
+      .btn-success:hover {
+        background-color: var(--success-hover);
+      }
+
+      .btn-danger {
+        background-color: var(--danger-color);
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background-color: var(--danger-hover);
+      }
+
+      .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+      }
+
+      /* Enhanced Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+
+      .modal.show {
+        opacity: 1;
+      }
+
+      .modal-content {
+        position: relative;
+        background-color: white;
+        margin: 2rem auto;
+        padding: 2rem;
+        width: 90%;
+        max-width: 800px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-20px);
+        transition: transform 0.3s ease-in-out;
+      }
+
+      .modal.show .modal-content {
+        transform: translateY(0);
+      }
+
+      .close-modal {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.5rem;
+        color: var(--gray-color);
+        cursor: pointer;
+        transition: var(--transition);
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius);
+      }
+
+      .close-modal:hover {
+        background-color: var(--light-gray);
+        color: var(--danger-color);
+      }
+
+      /* Enhanced Status Message Styles */
+      .status-message {
+        padding: 1rem;
+        border-radius: var(--radius);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      .status-message.success {
+        background-color: #ecfdf5;
+        color: var(--success-color);
+        border: 1px solid #a7f3d0;
+      }
+
+      .status-message.error {
+        background-color: #fef2f2;
+        color: var(--danger-color);
+        border: 1px solid #fecaca;
+      }
+
+      .status-message.info {
+        background-color: #eff6ff;
+        color: var(--info-color);
+        border: 1px solid #bfdbfe;
+      }
+
+      .status-message.warning {
+        background-color: #fffbeb;
+        color: var(--warning-color);
+        border: 1px solid #fef3c7;
+      }
+
+      /* Enhanced Table Styles */
+      .table-container {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .data-table th {
+        background-color: var(--light-gray);
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gray-color);
+        border-bottom: 2px solid var(--border-color);
+      }
+
+      .data-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .data-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover {
+        background-color: var(--light-gray);
+      }
+
+      /* Enhanced Filter Styles */
+      .filters {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .filter-item {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .filter-select,
+      .filter-input {
+        width: 100%;
+        padding: 0.625rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        background-color: white;
+        transition: var(--transition);
+      }
+
+      .filter-select:focus,
+      .filter-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      /* Enhanced Field Change Styles */
+      .field-change {
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color);
+        transition: var(--transition);
+      }
+
+      .field-change:hover {
+        box-shadow: var(--shadow);
+      }
+
+      .field-comparison {
+        background-color: var(--light-gray);
+        border-radius: var(--radius);
+        padding: 1rem;
+        margin-top: 0.5rem;
+      }
+
+      /* Animations */
+      @keyframes slideIn {
+        from {
+          transform: translateY(-10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* Loading States */
+      .loading {
+        position: relative;
+        pointer-events: none;
+      }
+
+      .loading::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: inherit;
+      }
+
+      .loading::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid var(--light-gray);
+        border-top-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 1;
+      }
+
+      @keyframes spin {
+        to {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 10px;
+      }
+
+      .user-details span {
+        display: block;
+      }
+
+      .user-name {
+        font-weight: 600;
+      }
+
+      .user-email {
+        color: var(--gray-color);
+        font-size: 0.85rem;
+      }
+
+      .request-status {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .status-pending {
+        background-color: #fef3c7;
+        color: #d97706;
+      }
+
+      .status-approved {
+        background-color: #d1fae5;
+        color: #059669;
+      }
+
+      .status-rejected {
+        background-color: #fee2e2;
+        color: #dc2626;
+      }
+
+      .field-change {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .field-change:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .field-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+
+      .field-comparison {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.5rem;
+      }
+
+      .field-old,
+      .field-new {
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .field-old {
+        background-color: #f1f5f9;
+        color: #64748b;
+      }
+
+      .field-new {
+        background-color: #e0f2fe;
+        color: #0369a1;
+      }
+
+      .document-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary-color);
+        font-size: 0.875rem;
+        text-decoration: none;
+        margin-top: 0.5rem;
+      }
+
+      .document-link:hover {
+        text-decoration: underline;
+      }
+
+      .compare-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-color);
+        padding: 0 0.5rem;
+      }
+
+      .notes-field {
+        min-height: 100px;
+        resize: vertical;
+      }
+
+      /* Enhanced action buttons */
+      .action-buttons {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .action-buttons .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+      }
+
+      .action-buttons .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .action-buttons .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+      }
+
+      .action-buttons .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+      }
+
+      .action-buttons .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+      }
+
+      .action-buttons .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+      }
+
+      .action-buttons .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+      }
+
+      .action-buttons .btn-primary:hover {
+        background-color: #0069d9;
+        border-color: #0062cc;
+      }
+
+      @media (max-width: 768px) {
+        .action-buttons {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .action-buttons .btn {
+          justify-content: center;
+          margin-bottom: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar - will be loaded via JavaScript -->
+      <div id="sidebar-container"></div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="header">
+          <h1 class="page-title">Gestion des Demandes de Profil</h1>
+        </div>
+
+        <div class="content-container">
+          <!-- Status Messages -->
+          <div
+            id="status-message"
+            class="status-message"
+            style="display: none"
+          ></div>
+
+          <!-- Dashboard Cards -->
+          <div class="cards-grid">
+            <!-- Total Requests Card -->
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <svg
+                  class="stat-card-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </div>
+              <div class="stat-card-value" id="total-requests">--</div>
+              <div class="stat-card-description">Toutes les demandes</div>
+            </div>
+
+            <!-- Pending Requests Card -->
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <svg
+                  class="stat-card-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div class="stat-card-value" id="pending-requests">--</div>
+              <div class="stat-card-description">En attente</div>
+            </div>
+
+            <!-- Approved Requests Card -->
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <svg
+                  class="stat-card-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <div class="stat-card-value" id="approved-requests">--</div>
+              <div class="stat-card-description">Approuvées</div>
+            </div>
+
+            <!-- Rejected Requests Card -->
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <svg
+                  class="stat-card-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+              </div>
+              <div class="stat-card-value" id="rejected-requests">--</div>
+              <div class="stat-card-description">Rejetées</div>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="filters">
+            <div class="filter-item">
+              <label for="request-type-filter">Type d'utilisateur</label>
+              <select id="request-type-filter" class="filter-select">
+                <option value="all">Tous</option>
+                <option value="student">Étudiants</option>
+                <option value="teacher">Enseignants</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="status-filter">Statut</label>
+              <select id="status-filter" class="filter-select">
+                <option value="all">Tous</option>
+                <option value="pending">En attente</option>
+                <option value="approved">Approuvée</option>
+                <option value="rejected">Rejetée</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="search">Recherche</label>
+              <input
+                type="text"
+                id="search"
+                class="filter-input"
+                placeholder="Nom, email..."
+              />
+            </div>
+          </div>
+
+          <!-- Profile Requests Table -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Utilisateur</th>
+                  <th>Type</th>
+                  <th>Champs Modifiés</th>
+                  <th>Date de Demande</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requests-table-body">
+                <tr>
+                  <td colspan="6" class="text-center">
+                    Chargement des demandes...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination" id="pagination">
+            <!-- Pagination will be generated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Request Details Modal -->
+    <div id="request-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2 class="modal-title">Détails de la Demande</h2>
+
+        <div class="user-info">
+          <div id="user-avatar" class="user-avatar">JD</div>
+          <div class="user-details">
+            <span id="user-name" class="user-name">John Doe</span>
+            <span id="user-email" class="user-email">john.doe@example.com</span>
+          </div>
+        </div>
+
+        <div class="details-container" style="margin-top: 1.5rem">
+          <div class="detail-row">
+            <div class="detail-label">Type d'utilisateur:</div>
+            <div id="user-type" class="detail-value">Étudiant</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">Date de Demande:</div>
+            <div id="request-date" class="detail-value">01/01/2023</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">Statut:</div>
+            <div
+              id="request-status"
+              class="detail-value request-status status-pending"
+            >
+              En attente
+            </div>
+          </div>
+        </div>
+
+        <div class="request-details" style="margin-top: 1.5rem">
+          <h3>Modifications Demandées</h3>
+
+          <div id="fields-container">
+            <!-- Field changes will be added here dynamically -->
+            <div class="field-change">
+              <div class="field-name">Téléphone</div>
+              <div class="field-comparison">
+                <div class="field-old">+213 555 123 456</div>
+                <div class="compare-arrow">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+                  </svg>
+                </div>
+                <div class="field-new">+213 555 789 012</div>
+              </div>
+            </div>
+
+            <div class="field-change">
+              <div class="field-name">Adresse</div>
+              <div class="field-comparison">
+                <div class="field-old">
+                  123 Rue des Palmiers, Alger, Algérie
+                </div>
+                <div class="compare-arrow">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+                  </svg>
+                </div>
+                <div class="field-new">456 Avenue du Sahara, Oran, Algérie</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="document-container" style="margin-top: 1rem; display: none">
+            <h3>Document Justificatif</h3>
+            <a
+              id="document-link"
+              href="#"
+              class="document-link"
+              target="_blank"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                ></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span id="document-name">document.pdf</span>
+            </a>
+          </div>
+        </div>
+
+        <div
+          id="admin-response-container"
+          class="request-details"
+          style="display: none"
+        >
+          <h3>Réponse Administrative</h3>
+          <p id="admin-response-text"></p>
+        </div>
+
+        <div
+          id="action-buttons"
+          class="modal-actions"
+          style="margin-top: 1.5rem"
+        >
+          <textarea
+            id="admin-comment"
+            class="notes-field"
+            placeholder="Ajouter un commentaire (optionnel)"
+          ></textarea>
+
+          <div style="display: flex; gap: 0.75rem; margin-top: 1rem">
+            <button id="approve-btn" class="btn btn-success">
+              Approuver les modifications
+            </button>
+            <button id="reject-btn" class="btn btn-danger">
+              Rejeter les modifications
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let allRequests = [];
+      let filteredRequests = [];
+      let currentPage = 1;
+      let itemsPerPage = 10;
+      let currentRequest = null;
+
+      // DOM Elements
+      const statusMessage = document.getElementById("status-message");
+      const requestsTableBody = document.getElementById("requests-table-body");
+      const paginationElement = document.getElementById("pagination");
+      const requestTypeFilter = document.getElementById("request-type-filter");
+      const statusFilter = document.getElementById("status-filter");
+      const searchInput = document.getElementById("search");
+
+      // Stats elements
+      const totalRequestsEl = document.getElementById("total-requests");
+      const pendingRequestsEl = document.getElementById("pending-requests");
+      const approvedRequestsEl = document.getElementById("approved-requests");
+      const rejectedRequestsEl = document.getElementById("rejected-requests");
+
+      // Modal elements
+      const requestModal = document.getElementById("request-modal");
+      const closeModalBtn = document.querySelector(".close-modal");
+      const userAvatar = document.getElementById("user-avatar");
+      const userName = document.getElementById("user-name");
+      const userEmail = document.getElementById("user-email");
+      const userType = document.getElementById("user-type");
+      const requestDate = document.getElementById("request-date");
+      const requestStatus = document.getElementById("request-status");
+      const fieldsContainer = document.getElementById("fields-container");
+      const documentContainer = document.getElementById("document-container");
+      const documentLink = document.getElementById("document-link");
+      const documentName = document.getElementById("document-name");
+      const adminResponseContainer = document.getElementById(
+        "admin-response-container"
+      );
+      const adminResponseText = document.getElementById("admin-response-text");
+      const actionButtons = document.getElementById("action-buttons");
+      const adminComment = document.getElementById("admin-comment");
+      const approveBtn = document.getElementById("approve-btn");
+      const rejectBtn = document.getElementById("reject-btn"); // Event listeners
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          // Verify admin token first with fallback check
+          if (typeof verifyAdminToken === "function") {
+            await verifyAdminToken();
+          } else {
+            console.error("verifyAdminToken function not available");
+            // Fallback: redirect to index.html if no admin token
+            const token =
+              localStorage.getItem("admin_token") ||
+              sessionStorage.getItem("admin_token");
+            if (!token) {
+              window.location.href = "index.html";
+              return;
+            }
+          }
+
+          // Load sidebar and data
+          await loadSidebar();
+          await loadRequests();
+          setupEventListeners();
+        } catch (error) {
+          console.error("Error initializing page:", error);
+          showMessage("Erreur lors du chargement de la page", "error");
+        }
+      });
+      async function loadSidebar() {
+        try {
+          // Get role from storage
+          const role =
+            localStorage.getItem("admin_role") ||
+            sessionStorage.getItem("admin_role");
+
+          console.log("Loading sidebar for role:", role);
+
+          // Map roles to sidebar files
+          const sidebarFiles = {
+            doyen: "admin-sidebar-doyen.html",
+            "vice-doyen": "admin-sidebar-vice-doyen.html",
+            "chef-de-departement": "admin-sidebar-chef-departement.html",
+            "chef-de-specialite": "admin-sidebar-chef-specialite.html",
+            secretaire: "admin-sidebar-secretaire.html",
+          };
+
+          // Get the sidebar file for the role
+          const sidebarFile = sidebarFiles[role] || sidebarFiles["doyen"]; // Default to doyen
+
+          console.log("Loading sidebar file:", sidebarFile);
+
+          const response = await fetch(sidebarFile);
+          if (!response.ok) throw new Error("Failed to load sidebar");
+
+          const html = await response.text();
+          document.getElementById("sidebar-container").innerHTML = html;
+
+          // Set up logout button event listener
+          const logoutBtn = document.getElementById("logout-btn");
+          if (logoutBtn && typeof handleAdminLogout === "function") {
+            logoutBtn.addEventListener("click", handleAdminLogout);
+          }
+
+          // Update admin info manually since scripts in innerHTML don't execute
+          updateSidebarAdminInfo();
+
+          // Set active menu item
+          setSidebarActiveMenuItem();
+
+          console.log("✅ Sidebar loaded successfully for role:", role);
+        } catch (error) {
+          console.error("Error loading sidebar:", error);
+        }
+      }
+
+      async function loadRequests() {
+        try {
+          // Call the loadProfileRequests function from profile-requests-handler.js
+          await loadProfileRequests();
+        } catch (error) {
+          console.error("Error loading requests:", error);
+          showMessage("Erreur lors du chargement des demandes", "error");
+          requestsTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-center">
+                Erreur lors du chargement des demandes. Veuillez réessayer plus tard.
+              </td>
+            </tr>
+          `;
+        }
+      }
+
+      function updateStats() {
+        try {
+          const stats = {
+            total: allRequests.length,
+            pending: allRequests.filter((req) => req.status === "pending")
+              .length,
+            approved: allRequests.filter((req) => req.status === "approved")
+              .length,
+            rejected: allRequests.filter((req) => req.status === "rejected")
+              .length,
+            cancelled: allRequests.filter((req) => req.status === "cancelled")
+              .length,
+          };
+
+          // Update stats cards
+          totalRequestsEl.textContent = stats.total;
+          pendingRequestsEl.textContent = stats.pending;
+          approvedRequestsEl.textContent = stats.approved;
+          rejectedRequestsEl.textContent = stats.rejected + stats.cancelled; // Include cancelled in rejected count
+        } catch (error) {
+          console.error("Error updating stats:", error);
+          // Set default values on error
+          totalRequestsEl.textContent = "--";
+          pendingRequestsEl.textContent = "--";
+          approvedRequestsEl.textContent = "--";
+          rejectedRequestsEl.textContent = "--";
+        }
+      }
+
+      function getStatusClass(status) {
+        switch (status) {
+          case "approved":
+            return "status-approved";
+          case "rejected":
+            return "status-rejected";
+          case "cancelled":
+            return "status-rejected";
+          case "pending":
+          default:
+            return "status-pending";
+        }
+      }
+
+      function getStatusText(status) {
+        switch (status) {
+          case "approved":
+            return "Approuvée";
+          case "rejected":
+            return "Rejetée";
+          case "cancelled":
+            return "Annulée";
+          case "pending":
+          default:
+            return "En attente";
+        }
+      }
+
+      function setupEventListeners() {
+        // Filter change events
+        requestTypeFilter.addEventListener("change", filterRequests);
+        statusFilter.addEventListener("change", filterRequests);
+        searchInput.addEventListener("input", filterRequests);
+
+        // Modal close button
+        closeModalBtn.addEventListener("click", closeModal);
+
+        // Outside modal click to close
+        window.addEventListener("click", function (event) {
+          if (event.target === requestModal) {
+            closeModal();
+          }
+        });
+
+        // Action buttons
+        approveBtn.addEventListener("click", () =>
+          handleRequestAction("approved")
+        );
+        rejectBtn.addEventListener("click", () =>
+          handleRequestAction("rejected")
+        );
+      }
+      function filterRequests() {
+        // Call the filterProfileRequests function from profile-requests-handler.js
+        filterProfileRequests();
+      }
+      function openRequestDetails(requestId) {
+        console.log("openRequestDetails called with ID:", requestId);
+
+        // Ensure the ID is properly parsed if it's a string
+        if (typeof requestId === "string") {
+          // Try both with and without conversion
+          const numericId = parseInt(requestId, 10);
+
+          // Try to find the request using both the original string and the parsed number
+          let request = allRequests.find(
+            (req) => req.id === requestId || req.id === numericId
+          );
+
+          // If still not found, try case-insensitive matching if string IDs
+          if (!request) {
+            request = allRequests.find(
+              (req) =>
+                String(req.id).toLowerCase() === String(requestId).toLowerCase()
+            );
+          }
+
+          if (request) {
+            console.log("Found request:", request);
+            displayRequestDetails(request);
+            return;
+          }
+        } else {
+          // Try direct matching if not a string
+          const request = allRequests.find((req) => req.id === requestId);
+          if (request) {
+            console.log("Found request:", request);
+            displayRequestDetails(request);
+            return;
+          }
+        }
+
+        console.error("Request not found for ID:", requestId);
+        console.log("Current allRequests array:", allRequests);
+
+        // If we get here, the request wasn't found - try reloading requests
+        showMessage("Chargement des demandes...", "info");
+
+        // Try to reload requests before giving up
+        loadProfileRequests()
+          .then(() => {
+            // Try finding the request again after reload
+            const request = allRequests.find(
+              (req) =>
+                req.id === requestId ||
+                req.id === parseInt(requestId, 10) ||
+                String(req.id) === String(requestId)
+            );
+
+            if (request) {
+              console.log("Found request after reload:", request);
+              displayRequestDetails(request);
+            } else {
+              console.error("Request still not found after reload:", requestId);
+              showMessage("Demande non trouvée", "error");
+            }
+          })
+          .catch((error) => {
+            console.error("Error reloading requests:", error);
+            showMessage("Erreur lors du chargement des demandes", "error");
+          });
+      }
+
+      // Helper function to display request details
+      function displayRequestDetails(request) {
+        currentRequest = request;
+
+        // Add loading state to modal
+        requestModal.classList.add("loading");
+
+        // Populate modal content
+        populateModalContent(request);
+
+        // Show modal with animation
+        requestModal.style.display = "block";
+        setTimeout(() => {
+          requestModal.classList.add("show");
+          requestModal.classList.remove("loading");
+        }, 10);
+      }
+
+      function populateModalContent(request) {
+        const student = request.student || {};
+
+        // Update user info
+        userAvatar.textContent = `${student.firstName?.charAt(0) || ""}${
+          student.lastName?.charAt(0) || ""
+        }`;
+        userName.textContent = `${student.firstName || ""} ${
+          student.lastName || ""
+        }`;
+        userEmail.textContent = student.email || "";
+        userType.textContent =
+          student.userType === "student" ? "Étudiant" : "Enseignant";
+
+        // Update request info
+        requestDate.textContent = request.createdAt
+          ? new Date(request.createdAt).toLocaleDateString("fr-FR")
+          : "-";
+        requestStatus.textContent = getStatusText(request.status);
+        requestStatus.className = `detail-value request-status ${getStatusClass(
+          request.status
+        )}`;
+
+        // Clear and populate fields container
+        fieldsContainer.innerHTML = "";
+        if (request.changes) {
+          Object.entries(request.changes).forEach(([field, value]) => {
+            const fieldChange = document.createElement("div");
+            fieldChange.className = "field-change";
+
+            const fieldName = document.createElement("div");
+            fieldName.className = "field-name";
+            fieldName.textContent = getFieldLabel(field);
+
+            const comparison = document.createElement("div");
+            comparison.className = "field-comparison";
+
+            const oldValue = document.createElement("div");
+            oldValue.className = "field-old";
+            oldValue.textContent = request.oldValues?.[field] || "-";
+
+            const arrow = document.createElement("div");
+            arrow.className = "compare-arrow";
+            arrow.innerHTML = `
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"></path>
+                <path d="m12 5 7 7-7 7"></path>
+              </svg>
+            `;
+
+            const newValue = document.createElement("div");
+            newValue.className = "field-new";
+            newValue.textContent = value || "-";
+
+            comparison.appendChild(oldValue);
+            comparison.appendChild(arrow);
+            comparison.appendChild(newValue);
+
+            fieldChange.appendChild(fieldName);
+            fieldChange.appendChild(comparison);
+            fieldsContainer.appendChild(fieldChange);
+          });
+        }
+
+        // Handle document if present
+        if (request.documentUrl) {
+          documentContainer.style.display = "block";
+          documentLink.href = request.documentUrl;
+          documentName.textContent =
+            request.documentName || "Document justificatif";
+        } else {
+          documentContainer.style.display = "none";
+        }
+
+        // Handle admin response
+        if (request.status !== "pending" && request.adminComment) {
+          adminResponseContainer.style.display = "block";
+          adminResponseText.textContent = request.adminComment;
+        } else {
+          adminResponseContainer.style.display = "none";
+        }
+
+        // Show/hide action buttons based on status
+        if (request.status === "pending") {
+          actionButtons.style.display = "block";
+          adminComment.value = "";
+        } else {
+          actionButtons.style.display = "none";
+        }
+      }
+
+      function getFieldLabel(field) {
+        const labels = {
+          firstName: "Prénom",
+          lastName: "Nom",
+          email: "Email",
+          phone: "Téléphone",
+          address: "Adresse",
+          birthDate: "Date de naissance",
+          // Add more field labels as needed
+        };
+        return labels[field] || field;
+      }
+
+      function closeModal() {
+        requestModal.classList.remove("show");
+        setTimeout(() => {
+          requestModal.style.display = "none";
+          currentRequest = null;
+        }, 300);
+      }
+
+      async function handleRequestAction(status) {
+        if (!currentRequest) {
+          showMessage("Erreur: Demande non trouvée", "error");
+          return;
+        }
+
+        try {
+          // Add loading state to buttons
+          const buttons = [approveBtn, rejectBtn];
+          buttons.forEach((btn) => btn.classList.add("loading"));
+          buttons.forEach((btn) => (btn.disabled = true));
+
+          showMessage("Traitement de la demande...", "info"); // First verify the request still exists and is in a valid state
+          const verifyResponse = await apiCall(
+            `profile-requests/${currentRequest.id}`,
+            "GET"
+          );
+          if (!verifyResponse || !verifyResponse.data) {
+            throw new Error("La demande n'existe plus ou a été modifiée");
+          }
+
+          const currentStatus = verifyResponse.data.status;
+          if (currentStatus !== "pending") {
+            throw new Error(
+              `Cette demande a déjà été ${getStatusText(
+                currentStatus
+              ).toLowerCase()}`
+            );
+          }
+
+          // Prepare the request data
+          const requestData = {
+            status: status,
+            adminComment: adminComment.value.trim(),
+          };
+
+          // Proceed with the update
+          const response = await apiCall(
+            `profile-requests/${currentRequest.id}/status`,
+            "PATCH",
+            requestData
+          );
+
+          if (!response) {
+            throw new Error("Pas de réponse du serveur");
+          }
+
+          if (!response.success) {
+            throw new Error(response.error || "Erreur lors de la mise à jour");
+          }
+
+          // Update the request in the local array
+          const index = allRequests.findIndex(
+            (req) => req.id === currentRequest.id
+          );
+          if (index !== -1) {
+            allRequests[index] = {
+              ...allRequests[index],
+              ...response.data,
+              status: status,
+              adminComment: requestData.adminComment,
+              processedById: getCurrentAdminId(),
+            };
+          }
+
+          // Update UI
+          updateStats();
+          filterRequests();
+
+          // Close modal
+          closeModal();
+
+          // Show success message
+          const actionText = status === "approved" ? "approuvées" : "rejetées";
+          showMessage(`Modifications ${actionText} avec succès`, "success");
+        } catch (error) {
+          console.error("Error updating request:", error);
+          showMessage(
+            `Erreur lors du traitement de la demande: ${error.message}`,
+            "error"
+          );
+        } finally {
+          // Remove loading state from buttons
+          const buttons = [approveBtn, rejectBtn];
+          buttons.forEach((btn) => btn.classList.remove("loading"));
+          buttons.forEach((btn) => (btn.disabled = false));
+        }
+      }
+
+      function getCurrentAdminId() {
+        return (
+          sessionStorage.getItem("admin_id") ||
+          localStorage.getItem("admin_id") ||
+          null
+        );
+      }
+
+      function showMessage(message, type = "info") {
+        statusMessage.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            ${getStatusIcon(type)}
+          </svg>
+          <span>${message}</span>
+        `;
+        statusMessage.className = `status-message ${type}`;
+        statusMessage.style.display = "flex";
+
+        // Hide message after 5 seconds with fade out animation
+        setTimeout(() => {
+          statusMessage.style.opacity = "0";
+          setTimeout(() => {
+            statusMessage.style.display = "none";
+            statusMessage.style.opacity = "1";
+          }, 300);
+        }, 5000);
+      }
+
+      function getStatusIcon(type) {
+        switch (type) {
+          case "success":
+            return `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>`;
+          case "error":
+            return `<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>`;
+          case "warning":
+            return `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`;
+          default:
+            return `<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>`;
+        }
+      }
+
+      function filterProfileRequests() {
+        filteredRequests = [...allRequests];
+
+        // Apply user type filter
+        if (requestTypeFilter && requestTypeFilter.value !== "all") {
+          filteredRequests = filteredRequests.filter(
+            (request) => request.student?.userType === requestTypeFilter.value
+          );
+        }
+
+        // Apply status filter
+        if (statusFilter && statusFilter.value !== "all") {
+          filteredRequests = filteredRequests.filter(
+            (request) => request.status === statusFilter.value
+          );
+        }
+
+        // Search filter - match student name, email, or any changed field
+        if (searchInput && searchInput.value.trim()) {
+          const searchTerm = searchInput.value.trim().toLowerCase();
+          filteredRequests = filteredRequests.filter((request) => {
+            const student = request.student || {};
+            const changes = request.changes || {};
+
+            // Check student info
+            const studentMatch =
+              (student.firstName &&
+                student.firstName.toLowerCase().includes(searchTerm)) ||
+              (student.lastName &&
+                student.lastName.toLowerCase().includes(searchTerm)) ||
+              (student.email &&
+                student.email.toLowerCase().includes(searchTerm));
+
+            // Check changed fields
+            const changesMatch = Object.values(changes).some(
+              (value) =>
+                value && value.toString().toLowerCase().includes(searchTerm)
+            );
+
+            return studentMatch || changesMatch;
+          });
+        } // Always reset to first page on filter
+        currentPage = 1;
+
+        // Render the filtered requests
+        renderProfileRequests();
+      }
+
+      // Add updatePagination function if not already defined
+      if (typeof updatePagination === "undefined") {
+        function updatePagination(totalPages) {
+          if (!paginationElement) return;
+
+          let paginationHTML = "";
+
+          if (totalPages > 1) {
+            paginationHTML += `<button class="pagination-button" onclick="changePage(${
+              currentPage - 1
+            })" ${currentPage === 1 ? "disabled" : ""}>Précédent</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+              paginationHTML += `<button class="pagination-button ${
+                i === currentPage ? "active" : ""
+              }" onclick="changePage(${i})">${i}</button>`;
+            }
+
+            paginationHTML += `<button class="pagination-button" onclick="changePage(${
+              currentPage + 1
+            })" ${
+              currentPage === totalPages ? "disabled" : ""
+            }>Suivant</button>`;
+          }
+
+          paginationElement.innerHTML = paginationHTML;
+        }
+      }
+
+      // Add changePage function if not already defined
+      if (typeof changePage === "undefined") {
+        function changePage(page) {
+          const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+          if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            renderProfileRequests();
+          }
+        }
+      }
+
+      // Function to update admin info in the sidebar
+      function updateSidebarAdminInfo() {
+        const adminName = document.getElementById("admin-name");
+        const adminRole = document.getElementById("admin-role");
+        const adminAvatar = document.getElementById("admin-avatar");
+
+        // Get admin data from session/local storage
+        const adminEmail =
+          sessionStorage.getItem("admin_email") ||
+          localStorage.getItem("admin_email");
+        const adminRoleValue =
+          sessionStorage.getItem("admin_role") ||
+          localStorage.getItem("admin_role");
+
+        // Extract name from email (e.g., sophie.williams@example.com -> Sophie Williams)
+        let displayName = "Admin";
+        if (adminEmail) {
+          const emailPrefix = adminEmail.split("@")[0];
+          // Convert email prefix to display name (sophie.williams -> Sophie Williams)
+          displayName = emailPrefix
+            .split(".")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
+        }
+
+        // Map role values to display names
+        const roleDisplayNames = {
+          doyen: "Doyen",
+          "vice-doyen": "Vice-Doyen",
+          "chef-de-departement": "Chef de Département",
+          "chef-de-specialite": "Chef de Spécialité",
+          secretaire: "Secrétaire",
+        };
+
+        const displayRole =
+          roleDisplayNames[adminRoleValue] ||
+          adminRoleValue ||
+          "Administrateur";
+
+        // Update the elements
+        if (adminName) {
+          adminName.textContent = displayName;
+        }
+        if (adminRole) {
+          adminRole.textContent = displayRole;
+        }
+        if (adminAvatar) {
+          adminAvatar.textContent = displayName.charAt(0).toUpperCase();
+        }
+
+        // Also try to get from admin_data for backward compatibility
+        const adminData = JSON.parse(
+          sessionStorage.getItem("admin_data") ||
+            localStorage.getItem("admin_data") ||
+            "{}"
+        );
+
+        if (adminData.name && adminName) {
+          adminName.textContent = adminData.name;
+        }
+        if (adminData.role && adminRole) {
+          adminRole.textContent = adminData.role;
+        }
+        if (adminData.name && adminAvatar) {
+          adminAvatar.textContent = adminData.name.charAt(0).toUpperCase();
+        }
+      }
+
+      // Function to set active menu item in sidebar
+      function setSidebarActiveMenuItem() {
+        const currentPath = window.location.pathname;
+        const navItems = document.querySelectorAll(".nav-item");
+
+        navItems.forEach((item) => {
+          if (item.getAttribute("href") === currentPath.split("/").pop()) {
+            item.classList.add("active");
+          } else {
+            item.classList.remove("active");
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tableau de Bord - Administration</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="style/admin.css" rel="stylesheet" />
+    <link href="style/section-statistics.css" rel="stylesheet" />
+    <script src="js/admin-api-config.js"></script>
+    <script src="js/admin-auth.js"></script>
+    <script src="js/admin-logout.js"></script>
+    <script src="js/admin-pages-validation.js"></script>
+    <script src="js/admin-mocks.js"></script>
+    <script src="js/admin-dashboard-utils.js"></script>
+    <script src="js/admin-role-config.js"></script>
+    <script src="js/admin-api-utils.js"></script>
+    <script src="js/admin-api-fetchers.js"></script>
+    <script src="js/admin-api-loader.js"></script>
+    <script src="js/admin-section-utils.js"></script>
+    <script src="js/section-statistics.js"></script>
+    <script src="js/admin-dashboard-enhanced.js"></script>
+    <!-- Chart.js for statistics visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Added admin API utils with enhanced dashboard functions -->
+    <style>
+      .welcome-banner {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        border-radius: 15px;
+        padding: 30px;
+        color: white;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 25px rgba(91, 33, 182, 0.1);
+      }
+
+      .welcome-banner h2 {
+        font-size: 2rem;
+        margin-bottom: 10px;
+      }
+
+      .welcome-banner p {
+        font-size: 1rem;
+        opacity: 0.9;
+        max-width: 600px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .stat-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+      }
+
+      .stat-title {
+        font-size: 0.9rem;
+        color: var(--gray-color);
+        font-weight: 500;
+      }
+
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 5px 0;
+      }
+
+      .stat-footer {
+        font-size: 0.85rem;
+        color: var(--gray-color);
+        margin-top: auto;
+      }
+
+      .access-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .access-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .access-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .access-card-header {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        padding: 20px;
+        color: white;
+      }
+
+      .access-card-body {
+        padding: 20px;
+      }
+
+      .access-card-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+
+      .access-card-description {
+        font-size: 0.9rem;
+        color: var(--gray-color);
+        margin-bottom: 15px;
+      }
+
+      .access-card-footer {
+        padding-top: 15px;
+        border-top: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+
+      .access-card-footer svg {
+        width: 16px;
+        height: 16px;
+        margin-left: 5px;
+      }
+
+      .recent-activity {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .activity-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .activity-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .activity-item {
+        display: flex;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .activity-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+      }
+
+      .activity-content {
+        flex: 1;
+      }
+
+      .activity-text {
+        margin-bottom: 5px;
+      }
+
+      .activity-time {
+        font-size: 0.8rem;
+        color: var(--gray-color);
+      }
+
+      .no-data {
+        text-align: center;
+        color: var(--gray-color);
+        padding: 20px;
+        font-size: 1rem;
+        border-radius: 10px;
+        background: #f9fafb;
+        margin-top: 10px;
+      }
+
+      .loading {
+        text-align: center;
+        color: var(--primary-color);
+        padding: 20px;
+        font-size: 1rem;
+        border-radius: 10px;
+        background: #f0f9ff;
+        margin-top: 10px;
+      }
+
+      .status-message {
+        display: none;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+
+      .status-message.info {
+        background-color: #e1f5fe;
+        color: #01579b;
+      }
+
+      .status-message.success {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      .status-message.warning {
+        background-color: #fff3e0;
+        color: #e65100;
+      }
+
+      .status-message.error {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <div id="navbar-container"></div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Page Header -->
+        <div class="header">
+          <h1 class="page-title">Tableau de Bord</h1>
+          <div class="header-actions">
+            <div
+              id="status-message"
+              class="status-message"
+              style="display: none"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+          <h2>Bienvenue, <span id="admin-welcome-name">Admin</span>!</h2>
+          <p>
+            Voici un aperçu de l'activité de l'université. Utilisez les cartes
+            ci-dessous pour accéder rapidement aux fonctionnalités principales.
+          </p>
+        </div>
+
+        <!-- Stats Overview -->
+        <h3 class="section-title">Aperçu Statistique</h3>
+        <div id="stats-grid" class="stats-grid">
+          <!-- Stats will be loaded dynamically -->
+        </div>
+
+        <!-- Quick Access Cards -->
+        <h3 class="section-title">Accès Rapide</h3>
+        <div id="access-cards" class="access-cards">
+          <!-- Access cards will be loaded dynamically -->
+        </div>
+
+        <!-- Recent Activity -->
+        <h3 class="section-title">Activités Récentes</h3>
+        <div class="recent-activity">
+          <div class="activity-header">
+            <div class="activity-title">Événements Récents</div>
+          </div>
+          <div id="activity-list" class="activity-list">
+            <!-- Activity items will be loaded dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Global variables
+      let adminRole =
+        sessionStorage.getItem("admin_role") ||
+        localStorage.getItem("admin_role");
+      let adminEmail =
+        sessionStorage.getItem("admin_email") ||
+        localStorage.getItem("admin_email");
+      let adminId =
+        sessionStorage.getItem("admin_id") || localStorage.getItem("admin_id");
+
+      // DOM Elements
+      const mainContent = document.querySelector(".main-content");
+      const navbarContainer = document.getElementById("navbar-container");
+
+      // Event listeners
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          // Verify admin authentication
+          await verifyAdminToken();
+
+          // Load sidebar
+          await loadSidebar();
+
+          // Initialize dashboard content
+          initializeDashboard();
+        } catch (error) {
+          console.error("Dashboard initialization error:", error);
+          showMessage(
+            "Error initializing dashboard: " + error.message,
+            "error"
+          );
+        }
+      });
+      async function loadSidebar() {
+        try {
+          // Get role from storage
+          const role =
+            localStorage.getItem("admin_role") ||
+            sessionStorage.getItem("admin_role");
+
+          console.log("Loading sidebar for role:", role);
+
+          // Map roles to sidebar files
+          const sidebarFiles = {
+            doyen: "admin-sidebar-doyen.html",
+            "vice-doyen": "admin-sidebar-vice-doyen.html",
+            "chef-de-departement": "admin-sidebar-chef-departement.html",
+            "chef-de-specialite": "admin-sidebar-chef-specialite.html",
+            secretaire: "admin-sidebar-secretaire.html",
+          };
+
+          // Get the sidebar file for the role
+          const sidebarFile = sidebarFiles[role] || sidebarFiles["doyen"]; // Default to doyen
+
+          console.log("Loading sidebar file:", sidebarFile);
+
+          const response = await fetch(sidebarFile);
+          if (!response.ok) throw new Error("Failed to load sidebar");
+          const html = await response.text();
+          navbarContainer.innerHTML = html;
+
+          // Set up logout button event listener
+          const logoutBtn = document.getElementById("logout-btn");
+          if (logoutBtn && typeof handleAdminLogout === "function") {
+            logoutBtn.addEventListener("click", handleAdminLogout);
+          }
+
+          // Update admin info manually since scripts in innerHTML don't execute
+          updateSidebarAdminInfo();
+
+          // Set active menu item
+          setSidebarActiveMenuItem();
+
+          console.log("✅ Sidebar loaded successfully for role:", role);
+        } catch (error) {
+          console.error("Error loading sidebar:", error);
+          showMessage("Failed to load navigation sidebar", "error");
+        }
+      }
+
+      async function initializeDashboard() {
+        // Create dashboard structure
+        createDashboardStructure();
+
+        // Update welcome message with admin name
+        updateWelcomeMessage();
+
+        // Load statistics based on admin role
+        await loadDashboardStats();
+
+        // Load access cards based on role permissions
+        loadAccessCards();
+
+        // Load recent activity
+        await loadRecentActivity();
+      }
+
+      function createDashboardStructure() {
+        mainContent.innerHTML = `
+          <div class="header">
+            <h1 class="page-title">Tableau de Bord</h1>
+          </div>
+
+          <div class="content-container">
+            <!-- Status message container -->
+            <div id="status-message" class="status-message" style="display: none;"></div>
+
+            <!-- Welcome banner -->
+            <div class="welcome-banner">
+              <h2>Bienvenue, <span id="admin-welcome-name">Admin</span>!</h2>
+              <p>Voici un aperçu de l'activité récente et des statistiques importantes de l'université.</p>
+            </div>
+
+            <!-- Stats grid -->
+            <div class="stats-grid" id="stats-grid">
+              <!-- Statistics cards will be inserted here -->
+            </div>
+
+            <!-- Access cards -->
+            <h3 class="section-title">Accès Rapides</h3>
+            <div class="access-cards" id="access-cards">
+              <!-- Access cards will be inserted here -->
+            </div>
+
+            <!-- Recent activity -->
+            <h3 class="section-title">Activités Récentes</h3>
+            <div class="recent-activity">
+              <div class="activity-list" id="activity-list">
+                <p class="loading">Chargement des activités récentes...</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function updateWelcomeMessage() {
+        const welcomeName = document.getElementById("admin-welcome-name");
+        if (welcomeName) {
+          // Extract name from email or use role as fallback
+          const name = adminEmail
+            ? adminEmail
+                .split("@")[0]
+                .replace(/\./g, " ")
+                .replace(/^(.)|\s+(.)/g, (c) => c.toUpperCase())
+            : adminRole;
+          welcomeName.textContent = name;
+        }
+      }
+
+      async function loadDashboardStats() {
+        try {
+          const statsGrid = document.getElementById("stats-grid");
+          if (!statsGrid) return;
+
+          statsGrid.innerHTML = `<div class="loading">Chargement des statistiques...</div>`;
+
+          // Use the fetchDashboardStats function from admin-api-fetchers.js or admin-dashboard-utils.js
+          const { stats, success, error } = await fetchDashboardStats();
+
+          if (!success || !stats) {
+            throw new Error(error || "Failed to load dashboard statistics");
+          }
+
+          console.log("Dashboard stats loaded:", stats);
+
+          // Create stat cards with data
+          statsGrid.innerHTML = `
+            <!-- Total Students Stat -->
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: rgba(99, 102, 241, 0.1); color: #6366F1;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <div class="stat-title">Étudiants</div>
+              </div>
+              <div class="stat-value">${
+                stats.studentsCount || stats.totalStudents || 0
+              }</div>
+              <div class="stat-footer">Total des étudiants inscrits</div>
+            </div>
+
+            <!-- Total Teachers Stat -->
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: rgba(5, 150, 105, 0.1); color: #059669;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <div class="stat-title">Enseignants</div>
+              </div>
+              <div class="stat-value">${
+                stats.teachersCount || stats.totalTeachers || 0
+              }</div>
+              <div class="stat-footer">Total des enseignants</div>
+            </div>
+
+            <!-- Sections Stat -->
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: rgba(79, 70, 229, 0.1); color: #4F46E5;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+                  </svg>
+                </div>
+                <div class="stat-title">Sections</div>
+              </div>
+              <div class="stat-value">${
+                stats.sectionsCount || stats.totalSections || 0
+              }</div>
+              <div class="stat-footer">Nombre total de sections</div>
+            </div>
+
+            <!-- Pending Requests Stat -->
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background-color: rgba(245, 158, 11, 0.1); color: #F59E0B;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+                <div class="stat-title">Demandes en attente</div>
+              </div>
+              <div class="stat-value">${
+                stats.pendingRequestsCount || stats.pendingSectionRequests || 0
+              }</div>
+              <div class="stat-footer">Total des demandes non traitées</div>
+            </div>
+          `;
+        } catch (error) {
+          console.error("Failed to load dashboard statistics:", error);
+          document.getElementById("stats-grid").innerHTML = `
+            <div class="status-message error">
+              Erreur lors du chargement des statistiques: ${
+                error.message || "Veuillez réessayer plus tard."
+              }
+            </div>
+          `;
+        }
+      }
+
+      function loadAccessCards() {
+        // Get the access cards container
+        const accessCards = document.getElementById("access-cards");
+        if (!accessCards) return;
+
+        accessCards.innerHTML = ""; // Clear existing cards
+
+        // Check if we have role-based cards configured
+        if (
+          window.adminRoleConfig &&
+          window.adminRoleConfig.getAccessCardsByRole
+        ) {
+          // Get cards based on role
+          const cards = window.adminRoleConfig.getAccessCardsByRole(adminRole);
+
+          // Add each card to the container
+          cards.forEach((card) => {
+            // Get appropriate icon SVG path
+            let svgIcon = "";
+            switch (card.icon) {
+              case "users":
+                svgIcon =
+                  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>';
+                break;
+              case "sections":
+                svgIcon =
+                  '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>';
+                break;
+              case "requests":
+                svgIcon =
+                  '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
+                break;
+              case "teachers":
+                svgIcon =
+                  '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>';
+                break;
+              case "profile":
+                svgIcon =
+                  '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>';
+                break;
+              default:
+                svgIcon =
+                  '<path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>';
+            }
+
+            // Create the card HTML
+            accessCards.innerHTML += `
+              <div class="access-card" onclick="window.location.href='${card.link}'">
+                <div class="access-card-header">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    ${svgIcon}
+                  </svg>
+                </div>
+                <div class="access-card-body">
+                  <h3 class="access-card-title">${card.title}</h3>
+                  <p class="access-card-description">${card.description}</p>
+                  <div class="access-card-footer">
+                    Accéder
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 12h14"></path>
+                      <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          // Fall back to basic roles
+          const highLevelRoles = ["doyen", "vice-doyen", "chef-de-departement"];
+          const midLevelRoles = ["chef-de-specialite"];
+
+          // Create default cards based on role
+          if (highLevelRoles.includes(adminRole?.toLowerCase())) {
+            // Add all access cards
+            createAccessCard(
+              "admin-gestion-enseignants.html",
+              "Gestion des Enseignants",
+              "Gérer les enseignants, leurs spécialités et leurs affectations",
+              "teachers"
+            );
+            createAccessCard(
+              "admin-gestion-sections.html",
+              "Gestion des Sections",
+              "Gérer les sections, les emplois du temps et les capacités",
+              "sections"
+            );
+            createAccessCard(
+              "admin-demandes-section.html",
+              "Demandes de Changement",
+              "Gérer les demandes de changement de section",
+              "requests"
+            );
+            createAccessCard(
+              "admin-profile-requests.html",
+              "Demandes de Profil",
+              "Gérer les demandes de modification de profil",
+              "profile"
+            );
+          } else if (midLevelRoles.includes(adminRole?.toLowerCase())) {
+            // Add mid-level access cards
+            createAccessCard(
+              "admin-gestion-sections.html",
+              "Gestion des Sections",
+              "Gérer les sections et les emplois du temps",
+              "sections"
+            );
+            createAccessCard(
+              "admin-demandes-section.html",
+              "Demandes de Changement",
+              "Gérer les demandes de changement de section",
+              "requests"
+            );
+          } else {
+            // Add basic access cards for secretaries and others
+            createAccessCard(
+              "admin-demandes-section.html",
+              "Demandes de Changement",
+              "Voir les demandes de changement de section",
+              "requests"
+            );
+            createAccessCard(
+              "admin-profile-requests.html",
+              "Demandes de Profil",
+              "Voir les demandes de modification de profil",
+              "profile"
+            );
+          }
+        }
+
+        // Helper function to create access cards
+        function createAccessCard(link, title, description, icon) {
+          let svgIcon = "";
+          switch (icon) {
+            case "users":
+              svgIcon =
+                '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>';
+              break;
+            case "sections":
+              svgIcon =
+                '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>';
+              break;
+            case "requests":
+              svgIcon =
+                '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
+              break;
+            case "teachers":
+              svgIcon =
+                '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>';
+              break;
+            case "profile":
+              svgIcon =
+                '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>';
+              break;
+            default:
+              svgIcon =
+                '<path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>';
+          }
+
+          accessCards.innerHTML += `
+            <div class="access-card" onclick="window.location.href='${link}'">
+              <div class="access-card-header">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  ${svgIcon}
+                </svg>
+              </div>
+              <div class="access-card-body">
+                <h3 class="access-card-title">${title}</h3>
+                <p class="access-card-description">${description}</p>
+                <div class="access-card-footer">
+                  Accéder
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      async function loadRecentActivity() {
+        try {
+          const activityList = document.getElementById("activity-list");
+          if (!activityList) return;
+
+          activityList.innerHTML = `<div class="loading">Chargement des activités récentes...</div>`;
+
+          // Use fetchDashboardStats to get recent activities
+          const { stats, success } = await fetchDashboardStats();
+
+          if (
+            success &&
+            stats &&
+            stats.recentActivities &&
+            stats.recentActivities.length > 0
+          ) {
+            activityList.innerHTML = "";
+
+            // Create activity items
+            stats.recentActivities.forEach((activity) => {
+              // Determine icon based on activity type
+              let iconSvg = "";
+              switch (activity.type) {
+                case "login":
+                  iconSvg =
+                    '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line>';
+                  break;
+                case "section_change":
+                  iconSvg =
+                    '<path d="M16 3h5v5"></path><path d="M21 3l-7 7"></path><path d="M3 16h5v5"></path><path d="M8 21l-7-7"></path>';
+                  break;
+                case "profile_update":
+                  iconSvg =
+                    '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>';
+                  break;
+                case "grade_entry":
+                  iconSvg =
+                    '<path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>';
+                  break;
+                default:
+                  iconSvg =
+                    '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
+              }
+
+              const timestamp = new Date(activity.timestamp);
+
+              activityList.innerHTML += `
+                <div class="activity-item">
+                  <div class="activity-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      ${iconSvg}
+                    </svg>
+                  </div>
+                  <div class="activity-content">
+                    <div class="activity-text">
+                      <strong>${activity.user || "Utilisateur"}</strong> ${
+                activity.description || "a effectué une action"
+              }
+                    </div>
+                    <div class="activity-time">${formatTimeAgo(timestamp)}</div>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            activityList.innerHTML = `<div class="no-data">Aucune activité récente à afficher</div>`;
+          }
+        } catch (error) {
+          console.error("Error loading recent activities:", error);
+          document.getElementById("activity-list").innerHTML = `
+            <div class="status-message error">Erreur lors du chargement des activités: ${
+              error.message || "Veuillez réessayer"
+            }</div>
+          `;
+        }
+      }
+
+      // Helper function to format time ago
+      function formatTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffSecs = Math.floor(diffMs / 1000);
+        const diffMins = Math.floor(diffSecs / 60);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffSecs < 60) return "à l'instant";
+        if (diffMins < 60)
+          return `il y a ${diffMins} minute${diffMins > 1 ? "s" : ""}`;
+        if (diffHours < 24)
+          return `il y a ${diffHours} heure${diffHours > 1 ? "s" : ""}`;
+        if (diffDays < 7)
+          return `il y a ${diffDays} jour${diffDays > 1 ? "s" : ""}`;
+
+        return date.toLocaleDateString();
+      }
+
+      function showMessage(message, type = "info") {
+        const statusMessage = document.getElementById("status-message");
+        if (!statusMessage) return;
+
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message ${type}`;
+        statusMessage.style.display = message ? "block" : "none";
+
+        if (message) {
+          setTimeout(() => {
+            statusMessage.style.display = "none";
+          }, 5000);
+        }
+      }
+
+      // Function to update admin info in the sidebar
+      function updateSidebarAdminInfo() {
+        const adminName = document.getElementById("admin-name");
+        const adminRole = document.getElementById("admin-role");
+        const adminAvatar = document.getElementById("admin-avatar");
+
+        // Get admin data from session/local storage
+        const adminEmail =
+          sessionStorage.getItem("admin_email") ||
+          localStorage.getItem("admin_email");
+        const adminRoleValue =
+          sessionStorage.getItem("admin_role") ||
+          localStorage.getItem("admin_role");
+
+        // Extract name from email (e.g., sophie.williams@example.com -> Sophie Williams)
+        let displayName = "Admin";
+        if (adminEmail) {
+          const emailPrefix = adminEmail.split("@")[0];
+          // Convert email prefix to display name (sophie.williams -> Sophie Williams)
+          displayName = emailPrefix
+            .split(".")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
+        }
+
+        // Map role values to display names
+        const roleDisplayNames = {
+          doyen: "Doyen",
+          "vice-doyen": "Vice-Doyen",
+          "chef-de-departement": "Chef de Département",
+          "chef-de-specialite": "Chef de Spécialité",
+          secretaire: "Secrétaire",
+        };
+
+        const displayRole =
+          roleDisplayNames[adminRoleValue] ||
+          adminRoleValue ||
+          "Administrateur";
+
+        // Update the elements
+        if (adminName) {
+          adminName.textContent = displayName;
+        }
+        if (adminRole) {
+          adminRole.textContent = displayRole;
+        }
+        if (adminAvatar) {
+          adminAvatar.textContent = displayName.charAt(0).toUpperCase();
+        }
+
+        // Also try to get from admin_data for backward compatibility
+        const adminData = JSON.parse(
+          sessionStorage.getItem("admin_data") ||
+            localStorage.getItem("admin_data") ||
+            "{}"
+        );
+
+        if (adminData.name && adminName) {
+          adminName.textContent = adminData.name;
+        }
+        if (adminData.role && adminRole) {
+          adminRole.textContent = adminData.role;
+        }
+        if (adminData.name && adminAvatar) {
+          adminAvatar.textContent = adminData.name.charAt(0).toUpperCase();
+        }
+      }
+
+      // Function to set active menu item in sidebar
+      function setSidebarActiveMenuItem() {
+        const currentPath = window.location.pathname;
+        const navItems = document.querySelectorAll(".nav-item");
+
+        navItems.forEach((item) => {
+          if (item.getAttribute("href") === currentPath.split("/").pop()) {
+            item.classList.add("active");
+          } else {
+            item.classList.remove("active");
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

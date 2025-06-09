@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Groupe et Section - Profil Étudiant</title>
+    <link href="style/group-section.css" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <div id="navbar-container"></div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="header">
+          <h1 class="page-title">Groupe et Section</h1>
+          <div class="header-actions">
+            <button id="refresh-btn" class="btn-icon" title="Actualiser">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  d="M8 3a5 5 0 0 0-5 5h1a1 1 0 0 1 1 1 1 1 0 0 1-1 1H3a6 6 0 1 1 6 6v1a1 1 0 0 1-1 1 1 1 0 0 1-1-1v-1a5 5 0 0 0 5-5h1a1 1 0 0 1 1 1 1 1 0 0 1-1 1h-1a6 6 0 0 1-6 6v1a1 1 0 0 1-1 1 1 1 0 0 1-1-1v-1a5 5 0 0 0-5-5H1a1 1 0 0 1-1-1 1 1 0 0 1 1-1h1a6 6 0 0 1 6-6V1a1 1 0 0 1 1-1 1 1 0 0 1 1 1v1a5 5 0 0 0 5 5h1a1 1 0 0 1 1 1 1 1 0 0 1-1 1H8z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="group-container">
+          <!-- Information sur les affectations -->
+          <div class="card">
+            <h2 class="card-title">
+              <span class="card-title-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7Zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216ZM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
+                  />
+                </svg>
+              </span>
+              Mes affectations
+            </h2>
+            <div class="info-grid" id="affectations-grid">
+              <!-- Les données seront chargées dynamiquement -->
+            </div>
+          </div>
+
+          <!-- Informations sur les responsables -->
+          <div class="card">
+            <h2 class="card-title">
+              <span class="card-title-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"
+                  />
+                </svg>
+              </span>
+              Responsables pédagogiques
+            </h2>
+            <div class="info-grid" id="responsables-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Configuration
+      const API_BASE_URL =
+        "https://unicersityback-production-1fbe.up.railway.app/api";
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          // Charger la navbar
+          await loadNavbar();
+
+          // Charger les données étudiant
+          const studentData = await loadStudentData();
+
+          // Mettre à jour les infos utilisateur dans la navbar
+          updateNavbarUserInfo(studentData);
+
+          // Charger les données des groupes et responsables
+          await loadGroupData(studentData);
+
+          // Setup refresh button
+          document
+            .getElementById("refresh-btn")
+            .addEventListener("click", async () => {
+              try {
+                localStorage.removeItem("studentData");
+                const newStudentData = await loadStudentData();
+                await loadGroupData(newStudentData);
+                showToast("Données actualisées avec succès", "success");
+              } catch (error) {
+                console.error("Erreur lors de l'actualisation:", error);
+                showToast(
+                  "Erreur lors de l'actualisation des données",
+                  "error"
+                );
+              }
+            });
+        } catch (error) {
+          console.error("Erreur d'initialisation:", error);
+          showToast("Erreur lors du chargement des données", "error");
+        }
+      });
+
+      async function loadNavbar() {
+        try {
+          const response = await fetch("etudiant-nav.html");
+          if (!response.ok)
+            throw new Error("Erreur de chargement de la navbar");
+
+          const html = await response.text();
+          document.getElementById("navbar-container").innerHTML = html;
+
+          // Activer le lien actif
+          document.querySelectorAll(".nav-link").forEach((link) => {
+            link.classList.remove("active");
+            if (link.getAttribute("href") === "group-section.html") {
+              link.classList.add("active");
+            }
+          });
+        } catch (error) {
+          console.error("Erreur:", error);
+          throw error;
+        }
+      }
+
+      function updateNavbarUserInfo(studentData) {
+        if (!studentData) {
+          console.warn("Aucune donnée étudiant trouvée dans le localStorage.");
+          return;
+        }
+
+        const avatar = document.getElementById("userAvatar");
+        const fullName = document.getElementById("userFullName");
+        const userId = document.getElementById("userId");
+
+        if (avatar) {
+          if (studentData.firstName && studentData.lastName) {
+            avatar.textContent = (
+              studentData.firstName.charAt(0) + studentData.lastName.charAt(0)
+            ).toUpperCase();
+          } else if (studentData.prenom && studentData.nom) {
+            avatar.textContent = (
+              studentData.prenom.charAt(0) + studentData.nom.charAt(0)
+            ).toUpperCase();
+          } else {
+            avatar.textContent = "ET";
+          }
+        }
+
+        if (fullName) {
+          if (studentData.firstName && studentData.lastName) {
+            fullName.textContent = `${studentData.firstName} ${studentData.lastName}`;
+          } else if (studentData.prenom && studentData.nom) {
+            fullName.textContent = `${studentData.prenom} ${studentData.nom}`;
+          } else {
+            fullName.textContent = "Étudiant";
+          }
+        }
+
+        if (userId) {
+          if (studentData.matricule) {
+            userId.textContent = `Matricule: ${studentData.matricule}`;
+          } else if (studentData.id) {
+            userId.textContent = `ID: ${studentData.id}`;
+          } else {
+            userId.textContent = "Utilisateur";
+          }
+        }
+      }
+
+      function getAuthToken() {
+        return (
+          sessionStorage.getItem("etudiant_token") ||
+          localStorage.getItem("etudiant_token")
+        );
+      }
+
+      function getAuthHeaders() {
+        return {
+          Authorization: `Bearer ${getAuthToken()}`,
+          "Content-Type": "application/json",
+        };
+      }
+
+      async function loadStudentData() {
+        // Try to get data from localStorage first
+        let studentData = null;
+        try {
+          studentData = JSON.parse(localStorage.getItem("studentData"));
+        } catch (e) {
+          console.error("Error parsing stored student data:", e);
+        }
+
+        if (!studentData) {
+          try {
+            const token = getAuthToken();
+            if (!token) {
+              window.location.href = "etudiant-login.html";
+              throw new Error("Vous n'êtes pas connecté");
+            }
+
+            // Extract user ID from JWT token
+            let userId = null;
+            try {
+              const tokenPayload = JSON.parse(atob(token.split(".")[1]));
+              userId = tokenPayload.userId;
+            } catch (e) {
+              console.error("Could not extract user ID from token:", e);
+              throw new Error("Token invalide");
+            }
+
+            // Fetch student data using the token
+            const response = await fetch(
+              `${API_BASE_URL}/etudiants/${userId}`,
+              {
+                headers: getAuthHeaders(),
+                signal: AbortSignal.timeout(10000),
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Erreur de chargement des données étudiant");
+            }
+
+            studentData = await response.json();
+            localStorage.setItem("studentData", JSON.stringify(studentData));
+          } catch (error) {
+            console.error("Erreur:", error);
+
+            // If error is timeout or network related, show offline message
+            if (
+              error.name === "AbortError" ||
+              error.message.includes("Failed to fetch")
+            ) {
+              showToast(
+                "Connexion au serveur impossible. Mode hors ligne activé.",
+                "warning"
+              );
+            } else {
+              throw error;
+            }
+          }
+        }
+        return studentData || {};
+      }
+
+      async function loadGroupData(studentData) {
+        try {
+          if (!studentData) {
+            showToast("Données étudiant non disponibles", "error");
+            return;
+          }
+
+          // Get section information directly from studentData
+          const sectionDetails = extractSectionDetails(studentData);
+
+          // Mettre à jour les affectations
+          const affectationsGrid = document.getElementById("affectations-grid");
+          affectationsGrid.innerHTML = `
+            <div class="info-item">
+                <div class="info-label">Filière</div>
+                <div class="info-value">${
+                  sectionDetails.specialty || "Non spécifié"
+                }</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Section</div>
+                <div class="info-value">${
+                  sectionDetails.name || "Non spécifié"
+                }</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Groupe TD</div>
+                <div class="info-value">${
+                  sectionDetails.tdGroup || "Non spécifié"
+                }</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Groupe TP</div>
+                <div class="info-value">${
+                  sectionDetails.tpGroup || "Non spécifié"
+                }</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Année académique</div>
+                <div class="info-value">2024-2025</div>
+            </div>
+          `;
+
+          // Fetch responsables data
+          try {
+            // Get section ID from studentData
+            const sectionId = sectionDetails.sectionId;
+
+            if (sectionId) {
+              const responsablesData = await fetchResponsables(sectionId);
+              updateResponsablesUI(responsablesData);
+            } else {
+              // Fallback to default values if no section ID
+              updateResponsablesUI();
+            }
+          } catch (error) {
+            console.error("Error fetching responsables:", error);
+            // Fallback to default values
+            updateResponsablesUI();
+          }
+        } catch (error) {
+          console.error("Erreur lors du chargement des données:", error);
+          showToast(
+            "Erreur lors du chargement des données. Affichage des données par défaut.",
+            "warning"
+          );
+
+          // Show fallback data if an error occurs
+          const affectationsGrid = document.getElementById("affectations-grid");
+          affectationsGrid.innerHTML = `
+            <div class="info-item">
+                <div class="info-label">Filière</div>
+                <div class="info-value">Informatique</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Section</div>
+                <div class="info-value">Section A</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Groupe TD</div>
+                <div class="info-value">TD 1</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Groupe TP</div>
+                <div class="info-value">TP 2</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Année académique</div>
+                <div class="info-value">2024-2025</div>
+            </div>
+          `;
+
+          updateResponsablesUI();
+        }
+      }
+
+      // Extract section details directly from studentData
+      function extractSectionDetails(studentData) {
+        let sectionInfo = {
+          specialty: "Non spécifié",
+          name: "Non spécifié",
+          tdGroup: "Non spécifié",
+          tpGroup: "Non spécifié",
+          sectionId: null,
+        };
+
+        // Check if studentData has sections information
+        if (studentData.sections && studentData.sections.length > 0) {
+          const section = studentData.sections[0];
+          sectionInfo = {
+            sectionId: section.id,
+            specialty: section.specialty || "Non spécifié",
+            name: section.name || "Non spécifié",
+            level: section.level || "Non spécifié",
+            code: section.code || "Non spécifié",
+            tdGroup: studentData.tdGroupe?.name || "Non spécifié",
+            tpGroup: studentData.tpGroupe?.name || "Non spécifié",
+          };
+        }
+
+        return sectionInfo;
+      }
+
+      // Display responsables in the UI
+      function updateResponsablesUI(responsablesData = null) {
+        const responsablesGrid = document.getElementById("responsables-grid");
+
+        // If no data provided, use default values
+        if (!responsablesData) {
+          responsablesGrid.innerHTML = `
+            <div class="info-item">
+                <div class="info-label">Responsable de filière</div>
+                <div class="info-value">Dr. Mohammed BENSAAD</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Responsable de section</div>
+                <div class="info-value">Dr. RAHMANI AHMED</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Responsable TD</div>
+                <div class="info-value">Dr. Karim MEZIANI</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Responsable TP</div>
+                <div class="info-value">Dr. Samira TALEB</div>
+            </div>
+          `;
+          return;
+        }
+
+        // Process responsables data into roles
+        const roles = {
+          filiere: "Non spécifié",
+          section: "Non spécifié",
+          td: "Non spécifié",
+          tp: "Non spécifié",
+        };
+
+        // Loop through responsables and organize by role
+        responsablesData.forEach((resp) => {
+          if (resp.role && resp.enseignant) {
+            const fullName = `${resp.enseignant.firstName} ${resp.enseignant.lastName}`;
+            roles[resp.role] = fullName;
+          }
+        });
+
+        // Update UI with processed roles
+        responsablesGrid.innerHTML = `
+          <div class="info-item">
+              <div class="info-label">Responsable de filière</div>
+              <div class="info-value">${roles.filiere}</div>
+          </div>
+          <div class="info-item">
+              <div class="info-label">Responsable de section</div>
+              <div class="info-value">${roles.section}</div>
+          </div>
+          <div class="info-item">
+              <div class="info-label">Responsable TD</div>
+              <div class="info-value">${roles.td}</div>
+          </div>
+          <div class="info-item">
+              <div class="info-label">Responsable TP</div>
+              <div class="info-value">${roles.tp}</div>
+          </div>
+        `;
+      }
+
+      async function fetchResponsables(sectionId) {
+        if (!sectionId) {
+          return null;
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/sections/${sectionId}/responsables`,
+            {
+              headers: getAuthHeaders(),
+              signal: AbortSignal.timeout(5000),
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Erreur de chargement des responsables");
+          }
+
+          const responsablesData = await response.json();
+          return responsablesData;
+        } catch (error) {
+          console.error(
+            "Erreur lors de la récupération des responsables:",
+            error
+          );
+          return null;
+        }
+      }
+
+      function showToast(message, type = "info") {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector(".toast-container");
+        if (!toastContainer) {
+          toastContainer = document.createElement("div");
+          toastContainer.className = "toast-container";
+          document.body.appendChild(toastContainer);
+        }
+
+        // Create toast element
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+
+        // Add toast to container
+        toastContainer.appendChild(toast);
+
+        // Remove toast after animation
+        setTimeout(() => {
+          toast.classList.add("fade-out");
+          setTimeout(() => {
+            toast.remove();
+            if (toastContainer.children.length === 0) {
+              toastContainer.remove();
+            }
+          }, 300);
+        }, 3000);
+      }
+
+      // Add toast styles if not already present
+      if (!document.querySelector("#toast-styles")) {
+        const style = document.createElement("style");
+        style.id = "toast-styles";
+        style.textContent = `
+          .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+          }
+          .toast {
+            padding: 12px 24px;
+            margin: 8px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+          }
+          .toast.fade-out {
+            opacity: 0;
+          }
+          .toast-success {
+            background-color: #10b981;
+          }
+          .toast-error {
+            background-color: #ef4444;
+          }
+          .toast-warning {
+            background-color: #f59e0b;
+          }
+          .toast-info {
+            background-color: #3b82f6;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    </script>
+  </body>
+</html>

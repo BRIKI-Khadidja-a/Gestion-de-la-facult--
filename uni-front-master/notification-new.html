@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Notifications</title>
+    <link href="style/notification.css" rel="stylesheet" />
+    <script src="js/notifications.js"></script>
+    <style>
+      /* Additional styles for notification system */
+      .loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+      }
+
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #3b82f6;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+        color: #6b7280;
+      }
+
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+
+      .notification-error {
+        background-color: #fee2e2;
+        border-left: 4px solid #ef4444;
+        color: #b91c1c;
+        padding: 16px;
+        margin: 16px 0;
+        border-radius: 4px;
+      }
+
+      .offline-message {
+        text-align: center;
+        padding: 30px;
+        background-color: #f9fafb;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+
+      .offline-icon {
+        font-size: 40px;
+        margin-bottom: 20px;
+      }
+
+      .retry-btn {
+        margin-top: 20px;
+        padding: 8px 16px;
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .retry-btn:hover {
+        background-color: #2563eb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <div id="navbar-container"></div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="header">
+          <h1 class="page-title">Notifications</h1>
+          <div class="header-actions">
+            <button onclick="markAllAsRead()">Tout marquer comme lu</button>
+          </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="content-card">
+          <div class="card-title">
+            <span>Mes notifications</span>
+            <div class="card-title-actions">
+              <button class="filter-btn" onclick="deleteAllRead()">
+                Supprimer lues
+              </button>
+            </div>
+          </div>
+
+          <div class="notification-filters">
+            <button
+              class="filter-btn active"
+              onclick="filterNotifications('all')"
+            >
+              Toutes
+            </button>
+            <button class="filter-btn" onclick="filterNotifications('admin')">
+              Administration
+            </button>
+            <button class="filter-btn" onclick="filterNotifications('cours')">
+              Cours
+            </button>
+            <button class="filter-btn" onclick="filterNotifications('examen')">
+              Examens
+            </button>
+            <button
+              class="filter-btn"
+              onclick="filterNotifications('emploi_du_temps')"
+            >
+              Emploi du temps
+            </button>
+            <button class="filter-btn" onclick="filterNotifications('unread')">
+              Non lues
+            </button>
+          </div>
+
+          <div class="notification-list" id="notification-list">
+            <!-- Notifications will be loaded dynamically via JavaScript -->
+            <div class="loading-spinner">
+              <div class="spinner"></div>
+              <p>Chargement des notifications...</p>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination">
+            <!-- Pagination will be updated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

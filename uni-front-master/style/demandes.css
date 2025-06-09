@@ -1,0 +1,766 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(240deg, #B0E0E6, #E6F2FF, #87CEFA, #F0F8FF);
+    background-size: 100% 100%;
+    min-height: 100vh;
+    color: #1A365D;
+    padding: 20px;
+}
+
+.dashboard-container {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Sidebar */
+.sidebar {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 30px 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    height: calc(100vh - 40px);
+    position: sticky;
+    top: 20px;
+}
+
+.user-info {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #E2E8F0;
+    margin-bottom: 20px;
+}
+
+.user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #3B82F6;
+    color: white;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+}
+
+.user-name {
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.user-id {
+    font-size: 0.9rem;
+    color: #64748B;
+}
+
+.nav-menu {
+    list-style: none;
+}
+
+.nav-item {
+    margin-bottom: 10px;
+}
+
+.nav-link {
+    display: block;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #1A365D;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.nav-link.active {
+    background-color: #3B82F6;
+    color: white;
+}
+
+/* Main Content */
+.main-content {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-gap: 20px;
+}
+
+.header {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 20px 30px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.page-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.8rem;
+    color: #3B82F6;
+}
+
+.header-actions button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(to right, #3B82F6, #1E40AF);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.header-actions button:hover {
+    opacity: 0.9;
+}
+
+/* Formulaires et tableaux */
+
+.card-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    color: #3B82F6;
+    padding-bottom: 10px;
+}
+
+.box{
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #CBD5E0;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.submit-btn {
+    padding: 12px 25px;
+    border: none;
+    font-size: 16px;
+    border-radius: 50px;
+    background: linear-gradient(to right, #3B82F6, #1E40AF);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    margin: 0 auto;
+}
+
+.submit-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+/* Tableau de suivi des demandes */
+.requests-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.requests-table th {
+    text-align: left;
+    padding:15px;
+    background-color: rgba(59, 130, 246, 0.1);
+    font-weight: 600;
+    border-bottom: 2px solid #E2E8F0;
+}
+
+.requests-table td {
+    padding: 15px;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.requests-table tr:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.status-chip {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background-color: #FEF3C7;
+    color: #D97706;
+}
+
+.status-approved {
+    background-color: #D1FAE5;
+    color: #059669;
+}
+
+.status-rejected {
+    background-color: #FEE2E2;
+    color: #DC2626;
+}
+
+/* Onglets pour les formulaires */
+.tab-container {
+    margin-bottom: 20px;
+}
+
+.tab-buttons {
+    display: flex;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.tab-button {
+    font-size: 16px;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: #64748B;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.tab-button.active {
+    color: #3B82F6;
+}
+
+.tab-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #3B82F6;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.boxx{
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+/* Styles pour les alertes et messages */
+.alert {
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.alert-info {
+    background-color: #EFF6FF;
+    border-left: 4px solid #3B82F6;
+    color: #1E40AF;
+}
+
+.alert-success {
+    background-color: #ECFDF5;
+    border-left: 4px solid #10B981;
+    color: #065F46;
+}
+
+/* Actions sur les demandes */
+.action-btn {
+    background: none;
+    border: none;
+    color: #3B82F6;
+    cursor: pointer;
+    font-weight: 500;
+    padding: 5px;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    text-decoration: underline;
+}
+
+.badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background-color: #EF4444;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+@media (max-width: 767px) {
+    .page-title {
+        font-size: 2.5vw;
+    }
+    .header-actions button {
+        font-size: 1.5vw;
+    }
+    .card-title {
+        font-size: 2.5vw;
+    }
+    .header {
+        padding: 8px 16px;
+        border-radius: 18px;
+    }
+    .dashboard-container {
+        grid-gap: 10px;
+    }
+    .main-content {
+        grid-gap: 10px;
+    }
+    body {
+        padding: 14px;
+    }
+
+    .tab-buttons {
+        margin-bottom: 15px;
+    }
+    
+    .tab-button {
+        padding: 8px 10px;
+        font-size: 2.2vw;
+    }
+    
+    .alert-info {
+        font-size: 2vw;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        margin-bottom: 4px;
+        font-size: 2vw;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 8px 8px;
+        border-radius: 6px;
+        font-size: 2vw;
+    }
+    .form-group textarea {
+        resize: vertical;
+        min-height: 60px;
+    }
+    .submit-btn {
+        padding: 12px 25px;
+        border-radius: 20px;
+        font-size: 12px;
+    }
+
+    .requests-table th {
+        font-size: 2vw;
+        padding: 8px;
+    }
+    
+    .requests-table td {
+        font-size: 1.8vw;
+        padding: 8px;
+    }
+    .requests-table {
+        margin-top: 0px;
+    }
+    .status-chip {
+        font-size: 1.2vw;
+    }
+    .action-btn {
+        color: #3B82F6;
+        cursor: pointer;
+        font-size: 1vw;
+    }
+    .box{
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    
+}
+
+/* Add these styles to the existing CSS file */
+
+.file-name {
+  margin-top: 5px;
+  padding: 5px 10px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: none;
+}
+
+.input-hint {
+  color: #6c757d;
+  font-size: 0.85em;
+  margin-top: 4px;
+}
+
+/* Form file input styling */
+input[type="file"] {
+  width: 100%;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border: 1px dashed #ced4da;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type="file"]:hover {
+  border-color: #adb5bd;
+  background-color: #e9ecef;
+}
+
+/* Tab styling improvements */
+.tab-button:hover {
+  color: #3B82F6;
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Form card styling */
+.form-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+/* Form cards inside formulaires tab need to be hidden by default */
+#formulaires .form-card {
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+/* Active form cards should be visible with animation */
+.form-card.active {
+  display: block !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Form cards directly in the suivi tab should always be visible */
+#suivi .form-card {
+  display: block;
+  opacity: 1;
+  transform: none;
+}
+
+/* Error and success messages */
+.error-message {
+  padding: 12px;
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  border-radius: 10px;
+  margin: 15px 0;
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.success-message {
+  padding: 12px;
+  background-color: #D1FAE5;
+  color: #047857;
+  border-radius: 10px;
+  margin: 15px 0;
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Button hover effects */
+.submit-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Loading indicator */
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+}
+
+/* Improved form styles */
+.request-form .form-section {
+  margin-bottom: 20px;
+}
+
+.request-form .form-actions {
+  margin-top: 30px;
+}
+
+/* Fix for form card styles - Removed duplicate declaration */
+/* The duplicate .form-card declaration was removed from here */
+
+/* Form card active state */
+.form-card.active {
+  display: block !important;
+}
+
+/* Form section style */
+.form-section {
+  margin-bottom: 20px;
+}
+
+.form-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #1A365D;
+}
+
+.form-section input,
+.form-section select,
+.form-section textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #CBD5E0;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.form-section input:focus,
+.form-section select:focus,
+.form-section textarea:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.form-section textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.current-value {
+  padding: 12px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: #f8f9fa;
+  color: #1A365D;
+  font-size: 0.95rem;
+}
+
+.form-actions {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.form-actions .submit-btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(to right, #3B82F6, #1E40AF);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.form-actions .submit-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+/* Fix for the request form */
+.request-form {
+  display: block;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Fixed form title styles */
+.form-card h3 {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.3rem;
+  margin-bottom: 25px;
+  color: #3B82F6;
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+/* Make sure the requests table is visible and properly styled */
+#suivi {
+  padding-top: 10px;
+}
+
+#suivi .box {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Make sure the "suivi" tab content is properly displayed */
+#suivi.active {
+  display: block !important;
+}
+
+.boxx{
+}
+
+/* Filter controls */
+.filter-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-container {
+  display: flex;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-container input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px 0 0 4px;
+  flex: 1;
+  outline: none;
+}
+
+.search-container input:focus {
+  border-color: var(--primary-color);
+}
+
+.search-container button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 0 4px 4px 0;
+}
+
+.search-container button:hover {
+  background-color: var(--primary-dark);
+}
+
+.filter-dropdown select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  min-width: 150px;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.filter-dropdown select:focus {
+  border-color: var(--primary-color);
+}
+
+/* Responsive layout for filter controls */
+@media (max-width: 768px) {
+  .filter-controls {
+    flex-direction: column;
+  }
+  
+  .search-container, .filter-dropdown {
+    width: 100%;
+  }
+}

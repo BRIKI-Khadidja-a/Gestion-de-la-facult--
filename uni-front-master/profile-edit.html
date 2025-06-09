@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Modifier mes coordonnées - Profil Étudiant</title>
+    <link href="style/profile-edit.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <div id="navbar-container"></div>
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="header">
+          <h1 class="page-title">Modifier mes coordonnées</h1>
+        </div>
+
+        <div class="profile-container">
+          <!-- Status Messages -->
+          <div
+            id="status-message"
+            class="status-message"
+            style="display: none"
+          ></div>
+
+          <!-- Request Notice -->
+          <div class="info-message" style="margin-bottom: 20px">
+            <strong>Note:</strong> Les modifications que vous souhaitez apporter
+            à votre profil seront soumises sous forme de demande. Un
+            administrateur devra valider ces modifications avant qu'elles ne
+            soient appliquées à votre profil.
+          </div>
+
+          <!-- Pending Requests Section -->
+          <div
+            id="pending-requests"
+            class="pending-requests"
+            style="display: none"
+          >
+            <h3>Demandes en attente</h3>
+            <div id="pending-requests-list" class="pending-requests-list"></div>
+          </div>
+
+          <h2 class="section-title">
+            Modification des informations de contact
+          </h2>
+
+          <form id="contact-form" class="profile-form">
+            <div class="form-group">
+              <label class="form-label" for="email">Adresse Email*</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-input"
+                required
+                readonly
+              />
+              <span class="form-help"
+                >Cette adresse ne peut pas être modifiée.</span
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="personalEmail"
+                >Email Personnel</label
+              >
+              <input
+                type="email"
+                id="personalEmail"
+                name="personalEmail"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="phone">Téléphone Principal</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                class="form-input"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="secondaryPhone"
+                >Téléphone Secondaire</label
+              >
+              <input
+                type="tel"
+                id="secondaryPhone"
+                name="secondaryPhone"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="address">Adresse Postale</label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="postalCode">Code Postal</label>
+              <input
+                type="text"
+                id="postalCode"
+                name="postalCode"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="city">Ville</label>
+              <input type="text" id="city" name="city" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="emergencyContact"
+                >Contact en cas d'urgence</label
+              >
+              <input
+                type="text"
+                id="emergencyContact"
+                name="emergencyContact"
+                class="form-input"
+              />
+              <div class="form-help">
+                Veuillez indiquer le nom et le numéro de téléphone d'une
+                personne à contacter en cas d'urgence.
+              </div>
+            </div>
+
+            <div class="button-group">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="window.location.href='profile.html'"
+              >
+                <i class="fas fa-arrow-left"></i> Retour au profil
+              </button>
+              <button type="submit" class="btn btn-primary" id="submit-btn">
+                <i class="fas fa-paper-plane"></i> Soumettre la demande
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global constants and variables
+      const API_BASE_URL =
+        "https://unicersityback-production-1fbe.up.railway.app/api";
+      const PROFILE_REQUESTS_API = `${API_BASE_URL}/profile-requests`;
+
+      let authToken = null;
+      let currentUser = null;
+      let isBackendAvailable = true;
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          // Attempt to retrieve token from storage
+          authToken =
+            sessionStorage.getItem("etudiant_token") ||
+            localStorage.getItem("etudiant_token");
+
+          if (!authToken) {
+            window.location.href = "etudiant-login.html";
+            return;
+          }
+
+          // Verify token first
+          await verifyToken();
+
+          // Load navbar
+          await loadNavbar();
+
+          // Load student data from API with fallback to localStorage
+          await loadStudentData();
+
+          // Check for pending requests
+          await checkPendingRequests();
+
+          // Set up form submission
+          setupFormSubmission();
+        } catch (error) {
+          console.error("Error initializing profile edit page:", error);
+
+          if (error.message.includes("auth")) {
+            showMessage(
+              "Session expirée. Redirection vers la page de connexion...",
+              "error"
+            );
+            setTimeout(() => {
+              window.location.href = "etudiant-login.html";
+            }, 2000);
+          } else {
+            handleOfflineMode();
+          }
+        }
+      });
+
+      async function verifyToken() {
+        try {
+          const verificationResponse = await fetch(
+            `${API_BASE_URL}/auth/verify`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+              signal: AbortSignal.timeout(5000),
+            }
+          );
+
+          if (!verificationResponse.ok) {
+            throw new Error(
+              `Token verification failed: ${verificationResponse.status}`
+            );
+          }
+
+          const userData = await verificationResponse.json();
+
+          // More permissive role validation - check if role exists or is student related
+          if (
+            userData.adminRole &&
+            userData.adminRole !== "etudiant" &&
+            !userData.adminRole.includes("etud")
+          ) {
+            console.warn(
+              "Role verification warning: Expected 'etudiant' role but got:",
+              userData.adminRole
+            );
+            // Continue anyway - we don't throw an error
+          }
+
+          // Store current user
+          currentUser = {
+            id: userData.userId,
+            email: userData.email,
+          };
+
+          return userData;
+        } catch (error) {
+          console.warn("Token verification failed:", error);
+
+          if (error.name === "AbortError" || error.message.includes("fetch")) {
+            isBackendAvailable = false;
+            // Continue with offline mode
+          } else {
+            // Authentication error
+            throw new Error("auth: " + error.message);
+          }
+        }
+      }
+
+      async function loadNavbar() {
+        try {
+          const response = await fetch("etudiant-nav.html");
+          const html = await response.text();
+
+          const navbarContainer = document.getElementById("navbar-container");
+          if (navbarContainer) {
+            navbarContainer.innerHTML = html;
+
+            // Activate the profile nav link (for both profile and profile-edit pages)
+            document
+              .querySelectorAll("#navbar-container .nav-link")
+              .forEach((link) => {
+                link.classList.remove("active");
+                const linkHref = link.getAttribute("href");
+                const currentPage = window.location.pathname.split("/").pop();
+
+                if (
+                  linkHref === "profile.html" &&
+                  (currentPage === "profile.html" ||
+                    currentPage === "profile-edit.html")
+                ) {
+                  link.classList.add("active");
+                } else if (linkHref === currentPage) {
+                  link.classList.add("active");
+                }
+              });
+
+            // Update user info in navbar
+            updateNavbarUserInfo();
+          }
+        } catch (error) {
+          console.error("Error loading navbar:", error);
+          // Continue without navbar
+        }
+      }
+
+      function updateNavbarUserInfo() {
+        const studentData = getStudentData();
+        if (!studentData) {
+          console.warn("Aucune donnée étudiant trouvée dans le localStorage.");
+          return;
+        }
+
+        const avatar = document.getElementById("userAvatar");
+        const fullName = document.getElementById("userFullName");
+        const userId = document.getElementById("userId");
+
+        if (avatar) {
+          if (studentData.firstName && studentData.lastName) {
+            avatar.textContent = (
+              studentData.firstName.charAt(0) + studentData.lastName.charAt(0)
+            ).toUpperCase();
+          } else if (studentData.prenom && studentData.nom) {
+            avatar.textContent = (
+              studentData.prenom.charAt(0) + studentData.nom.charAt(0)
+            ).toUpperCase();
+          } else {
+            avatar.textContent = "ET";
+          }
+        }
+
+        if (fullName) {
+          if (studentData.firstName && studentData.lastName) {
+            fullName.textContent = `${studentData.firstName} ${studentData.lastName}`;
+          } else if (studentData.prenom && studentData.nom) {
+            fullName.textContent = `${studentData.prenom} ${studentData.nom}`;
+          } else {
+            fullName.textContent = "Étudiant";
+          }
+        }
+
+        if (userId) {
+          if (studentData.matricule) {
+            userId.textContent = `Matricule: ${studentData.matricule}`;
+          } else if (studentData.id) {
+            userId.textContent = `ID: ${studentData.id}`;
+          } else {
+            userId.textContent = "Utilisateur";
+          }
+        }
+      }
+
+      function getStudentData() {
+        try {
+          return JSON.parse(localStorage.getItem("studentData"));
+        } catch (e) {
+          console.error("Error parsing student data:", e);
+          return null;
+        }
+      }
+
+      async function loadStudentData() {
+        let studentData = null;
+
+        // Check if backend is available
+        if (isBackendAvailable && currentUser?.id) {
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/etudiants/${currentUser.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${authToken}`,
+                  "Content-Type": "application/json",
+                },
+                signal: AbortSignal.timeout(5000),
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`API request failed: ${response.status}`);
+            }
+
+            studentData = await response.json();
+
+            // Cache the data in localStorage
+            localStorage.setItem("studentData", JSON.stringify(studentData));
+          } catch (error) {
+            console.error("Error fetching student data from API:", error);
+            isBackendAvailable = false;
+
+            // Fall back to cached data
+            studentData = getStudentData();
+            if (!studentData) {
+              showMessage(
+                "Données étudiant non disponibles en mode hors ligne",
+                "error"
+              );
+              return null;
+            }
+          }
+        } else {
+          // Offline mode: use cached data
+          studentData = getStudentData();
+          if (!studentData) {
+            showMessage(
+              "Données étudiant non disponibles en mode hors ligne",
+              "error"
+            );
+            return null;
+          }
+        }
+
+        // Populate form with student data
+        if (studentData) {
+          populateFormWithStudentData(studentData);
+        }
+
+        return studentData;
+      }
+
+      function populateFormWithStudentData(studentData) {
+        if (!studentData) return;
+
+        // Populate fields that can be edited
+        document.getElementById("email").value = studentData.email || "";
+        document.getElementById("personalEmail").value =
+          studentData.personalEmail || "";
+        document.getElementById("phone").value = studentData.phone || "";
+        document.getElementById("secondaryPhone").value =
+          studentData.secondaryPhone || "";
+        document.getElementById("address").value = studentData.address || "";
+        document.getElementById("postalCode").value =
+          studentData.postalCode || "";
+        document.getElementById("city").value = studentData.city || "";
+        document.getElementById("emergencyContact").value =
+          studentData.emergencyContact || "";
+      }
+
+      async function checkPendingRequests() {
+        if (!isBackendAvailable || !currentUser?.id) return;
+
+        try {
+          const response = await fetch(
+            `${PROFILE_REQUESTS_API}/student/${currentUser.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+              signal: AbortSignal.timeout(5000),
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch pending requests: ${response.status}`
+            );
+          }
+
+          const requests = await response.json();
+
+          if (requests && requests.length > 0) {
+            displayPendingRequests(requests);
+          }
+        } catch (error) {
+          console.warn("Failed to check pending requests:", error);
+          // Not critical, can continue without showing pending requests
+        }
+      }
+
+      function displayPendingRequests(requests) {
+        const container = document.getElementById("pending-requests");
+        const listContainer = document.getElementById("pending-requests-list");
+        listContainer.innerHTML = "";
+
+        // Sort requests by date (newest first)
+        requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (requests.length > 0) {
+          requests.forEach((request) => {
+            const requestEl = document.createElement("div");
+            requestEl.className = "request-card";
+
+            // Format the status
+            let statusText = "";
+            let statusClass = "";
+            switch ((request.status || "").toLowerCase()) {
+              case "pending":
+                statusText = "En attente";
+                statusClass = "status-pending";
+                break;
+              case "approved":
+                statusText = "Approuvée";
+                statusClass = "status-approved";
+                break;
+              case "rejected":
+                statusText = "Rejetée";
+                statusClass = "status-rejected";
+                break;
+              default:
+                statusText = request.status || "En attente";
+                statusClass = "status-pending";
+            }
+
+            // Format date to French locale
+            const formattedDate = new Date(
+              request.createdAt
+            ).toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            });
+
+            // Create content
+            requestEl.innerHTML = `
+              <div class="request-card-header">
+                <span class="request-date">${formattedDate}</span>
+                <span class="request-status ${statusClass}">${statusText}</span>
+              </div>
+              <div class="request-card-details">
+                ${Object.entries(request.changes || {})
+                  .filter(
+                    ([key, value]) =>
+                      value !== null && value !== undefined && value !== ""
+                  )
+                  .map(
+                    ([key, value]) =>
+                      `<div class="change-item">
+                        <span class="change-field">${getFieldLabel(key)}:</span>
+                        <span class="change-value">${value}</span>
+                      </div>`
+                  )
+                  .join("")}
+              </div>
+            `;
+            listContainer.appendChild(requestEl);
+          });
+          container.style.display = "block";
+        } else {
+          container.style.display = "none";
+        }
+      }
+
+      function getFieldLabel(fieldName) {
+        const labels = {
+          personalEmail: "Email Personnel",
+          phone: "Téléphone Principal",
+          secondaryPhone: "Téléphone Secondaire",
+          address: "Adresse",
+          postalCode: "Code Postal",
+          city: "Ville",
+          emergencyContact: "Contact d'urgence",
+        };
+
+        return labels[fieldName] || fieldName;
+      }
+
+      function setupFormSubmission() {
+        const form = document.getElementById("contact-form");
+
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          if (!isBackendAvailable) {
+            showMessage(
+              "Mode hors ligne: Impossible de soumettre votre demande actuellement. Veuillez réessayer lorsque vous serez connecté au réseau.",
+              "warning"
+            );
+            return;
+          }
+
+          // Disable submit button and show loading state
+          const submitBtn = document.getElementById("submit-btn");
+          const originalText = submitBtn.innerHTML;
+          submitBtn.disabled = true;
+          submitBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+
+          try {
+            // Create request object
+            const requestData = {
+              studentId: currentUser.id,
+              changes: {
+                personalEmail: document.getElementById("personalEmail").value,
+                phone: document.getElementById("phone").value,
+                secondaryPhone: document.getElementById("secondaryPhone").value,
+                address: document.getElementById("address").value,
+                postalCode: document.getElementById("postalCode").value,
+                city: document.getElementById("city").value,
+                emergencyContact:
+                  document.getElementById("emergencyContact").value,
+              },
+            };
+
+            // Send request to API
+            const response = await fetch(`${PROFILE_REQUESTS_API}`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(requestData),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(
+                errorData.message ||
+                  `Request failed with status: ${response.status}`
+              );
+            }
+
+            // Show success message
+            showMessage(
+              "Votre demande de modification a été soumise avec succès. Un administrateur l'examinera prochainement.",
+              "success"
+            );
+
+            // Refresh pending requests
+            await checkPendingRequests();
+          } catch (error) {
+            console.error("Error submitting profile change request:", error);
+            showMessage(
+              `Erreur lors de la soumission de votre demande: ${error.message}`,
+              "error"
+            );
+          } finally {
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+          }
+        });
+      }
+
+      function showMessage(message, type = "info") {
+        const messageEl = document.getElementById("status-message");
+
+        // Clean up error messages to be more user friendly
+        if (type === "error") {
+          if (message.includes("Cannot GET /api/profile-requests")) {
+            message =
+              "Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et réessayer.";
+          } else if (message.includes("Request failed with status: 401")) {
+            message = "Votre session a expiré. Veuillez vous reconnecter.";
+          } else if (message.includes("Request failed with status: 403")) {
+            message =
+              "Vous n'avez pas les permissions nécessaires pour effectuer cette action.";
+          } else if (message.includes("Request failed with status: 404")) {
+            message =
+              "La ressource demandée n'a pas été trouvée. Veuillez réessayer.";
+          }
+        }
+
+        messageEl.textContent = message;
+        messageEl.className = `status-message ${type}-message`;
+        messageEl.style.display = "block";
+
+        // Scroll to the message
+        messageEl.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Auto-hide after 5 seconds for success messages
+        if (type === "success") {
+          setTimeout(() => {
+            messageEl.style.opacity = "0";
+            setTimeout(() => {
+              messageEl.style.display = "none";
+              messageEl.style.opacity = "1";
+            }, 300);
+          }, 5000);
+        }
+      }
+
+      function handleOfflineMode() {
+        showOfflineNotification();
+
+        // Try to load from cache
+        const cachedData = getStudentData();
+        if (cachedData) {
+          populateFormWithStudentData(cachedData);
+          updateNavbarUserInfo();
+        } else {
+          showMessage(
+            "Aucune donnée étudiant disponible en mode hors ligne",
+            "error"
+          );
+        }
+      }
+
+      function showOfflineNotification() {
+        // Check if notification already exists
+        if (document.querySelector(".offline-notification")) return;
+
+        const notification = document.createElement("div");
+        notification.className = "offline-notification";
+        notification.innerHTML = `
+          <div class="notification-content">
+            <strong>Mode hors ligne</strong>: Vous pouvez consulter et modifier votre profil, mais les modifications ne seront pas enregistrées tant que vous n'êtes pas en ligne.
+            <button onclick="location.reload()" class="retry-button">Réessayer</button>
+          </div>
+        `;
+
+        // Add some styling
+        notification.style.background = "#fff3cd";
+        notification.style.color = "#856404";
+        notification.style.padding = "10px";
+        notification.style.borderRadius = "5px";
+        notification.style.margin = "10px 0";
+        notification.style.textAlign = "center";
+
+        // Add the retry button style
+        const style = document.createElement("style");
+        style.textContent = `
+          .retry-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin-left: 10px;
+            cursor: pointer;
+          }
+
+          .offline-notification {
+            margin-bottom: 20px;
+          }
+
+          .request-card {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+          }
+
+          .request-card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+          }
+
+          .request-status {
+            font-weight: bold;
+          }
+
+          .status-pending {
+            color: #856404;
+          }
+
+          .status-approved {
+            color: #155724;
+          }
+
+          .status-rejected {
+            color: #721c24;
+          }
+
+          .change-item {
+            padding: 2px 0;
+          }
+
+          .change-field {
+            font-weight: bold;
+          }
+
+          .pending-requests-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 10px;
+          }
+          .request-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            padding: 16px 20px;
+            min-width: 220px;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+          .request-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+          }
+          .request-status.status-pending {
+            background: #ffeeba;
+            color: #856404;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.95em;
+            font-weight: 500;
+          }
+          .request-status.status-approved {
+            background: #d4edda;
+            color: #155724;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.95em;
+            font-weight: 500;
+          }
+          .request-status.status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.95em;
+            font-weight: 500;
+          }
+          .request-card-details {
+            margin-left: 8px;
+          }
+          .change-item {
+            padding: 2px 0;
+            font-size: 0.98em;
+          }
+          .change-field {
+            font-weight: bold;
+            color: #2a3b4d;
+          }
+        `;
+        document.head.appendChild(style);
+
+        // Add to the page
+        const header = document.querySelector(".header");
+        if (header) {
+          header.parentNode.insertBefore(notification, header.nextSibling);
+        } else {
+          document.querySelector(".main-content").prepend(notification);
+        }
+      }
+    </script>
+  </body>
+</html>

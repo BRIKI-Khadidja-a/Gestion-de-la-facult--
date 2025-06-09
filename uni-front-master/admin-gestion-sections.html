@@ -1,0 +1,5837 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestion des Sections - Administration</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="style/admin.css" rel="stylesheet" />
+    <link href="style/timetable-viewer.css" rel="stylesheet" />
+    <link href="style/section-responsables.css" rel="stylesheet" />
+    <!-- Add reference to admin auth helper -->
+    <script src="js/admin-api-config.js"></script>
+    <script src="js/admin-auth.js"></script>
+    <script src="js/admin-logout.js"></script>
+    <script src="js/admin-pages-validation.js"></script>
+    <script src="js/admin-mocks.js"></script>
+    <script src="js/admin-api-utils.js"></script>
+    <script src="js/admin-api-fetchers.js"></script>
+    <script src="js/admin-api-loader.js"></script>
+    <script src="js/admin-section-utils.js"></script>
+    <script src="js/admin-sections.js"></script>
+    <script src="js/admin-sections-init.js"></script>
+
+    <!-- Add Google Material Icons -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+
+    <style>
+      .section-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .section-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .section-details {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .section-name {
+        font-weight: 500;
+        color: #111827;
+      }
+
+      .section-code {
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+
+      .level-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background-color: #e5e7eb;
+        color: #374151;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .capacity-badge {
+        margin-left: 8px;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .capacity-normal {
+        background-color: #ecfdf5;
+        color: #10b981;
+      }
+
+      .capacity-warning {
+        background-color: #fffbeb;
+        color: #d97706;
+      }
+
+      .capacity-full {
+        background-color: #fee2e2;
+        color: #ef4444;
+      }
+
+      .responsables-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .responsable-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+
+      .responsable-role {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+      }
+
+      .responsable-name {
+        color: #666;
+      }
+
+      .no-responsables {
+        color: #666;
+        font-style: italic;
+        font-size: 0.9rem;
+      }
+
+      .section-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        .section-form {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Timetable upload related styles */
+      .table-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      .timetable-modal .modal-content {
+        max-width: 500px;
+      }
+
+      .file-upload-container {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .file-upload-container:hover,
+      .file-upload-container.dragover {
+        border-color: var(--primary-color);
+        background-color: rgba(var(--primary-rgb), 0.05);
+      }
+
+      .file-upload-icon {
+        font-size: 48px;
+        color: #ccc;
+        margin-bottom: 10px;
+      }
+
+      .file-upload-text {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+      }
+
+      .file-upload-input {
+        display: none;
+      }
+
+      .file-upload-btn {
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #f0f4ff;
+        color: var(--primary-color);
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .file-upload-btn:hover {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .selected-file {
+        display: flex;
+        align-items: center;
+        margin-top: 15px;
+        padding: 10px;
+        background-color: #f0f4ff;
+        border-radius: 4px;
+        display: none;
+      }
+
+      .selected-file-icon {
+        font-size: 24px;
+        margin-right: 10px;
+        color: var(--primary-color);
+      }
+
+      .selected-file-name {
+        flex-grow: 1;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .selected-file-remove {
+        color: #ef4444;
+        cursor: pointer;
+        font-size: 18px;
+      }
+      .upload-timetable-btn,
+      .upload-exam-btn,
+      .view-timetables-btn {
+        color: #10b981;
+      }
+
+      /* Teacher Assignment Modal Styles */
+      .section-info-display {
+        background-color: #f0f4ff;
+        padding: 10px;
+        border-radius: 4px;
+        border-left: 4px solid var(--primary-color);
+      }
+      .current-assignments {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        background-color: #f9f9f9;
+      }
+
+      .assignments-container {
+        margin-bottom: 10px;
+      }
+
+      .role-assignments {
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+      }
+
+      .role-assignments h4 {
+        font-size: 14px;
+        margin: 5px 0;
+        color: #444;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 3px;
+      }
+
+      .role-assignments ul {
+        list-style: none;
+        padding-left: 10px;
+        margin: 0;
+      }
+
+      .assignment-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .assignment-item:last-child {
+        border-bottom: none;
+      }
+
+      .assignment-info {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        gap: 4px;
+      }
+
+      .assignment-teacher {
+        font-size: 14px;
+      }
+
+      .no-assignments,
+      .error {
+        padding: 10px;
+        text-align: center;
+        color: #666;
+        font-style: italic;
+      }
+
+      .error {
+        color: #d32f2f;
+      }
+
+      .create-group-option {
+        font-weight: bold;
+        color: #2196f3;
+      }
+
+      .assignment-role {
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 14px;
+      }
+
+      .assignment-teacher {
+        font-size: 14px;
+        color: #374151;
+        font-weight: 500;
+      }
+
+      .assignment-group {
+        font-size: 12px;
+        color: #6b7280;
+        font-style: italic;
+      }
+      .remove-assignment-btn {
+        background-color: #fee2e2;
+        color: #ef4444;
+        border: none;
+        padding: 6px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .remove-assignment-btn:hover {
+        background-color: #fecaca;
+      }
+
+      .teacher-action-btn {
+        background-color: #10b981;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: 5px;
+      }
+      .teacher-action-btn:hover {
+        background-color: #059669;
+      } /* Enhanced Teachers/Responsables column styles */
+      .teachers-info {
+        max-width: 250px;
+        min-width: 180px;
+        padding: 4px;
+      }
+
+      .teachers-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .teacher-assignment {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background-color: #f3f4f6;
+        font-size: 0.875rem;
+        color: #374151;
+      }
+
+      .loading-teachers {
+        color: #6b7280;
+        font-size: 0.875rem;
+      }
+
+      .no-teachers {
+        color: #9ca3af;
+        font-style: italic;
+        font-size: 0.85rem;
+        padding: 8px;
+        text-align: center;
+        background-color: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 4px;
+        font-weight: 400;
+      }
+
+      .error-teachers {
+        color: #ef4444;
+        font-size: 0.85rem;
+        padding: 8px;
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      /* Responsive adjustments for responsables column */
+      @media (max-width: 1200px) {
+        .teachers-info {
+          max-width: 200px;
+          min-width: 150px;
+        }
+
+        .teacher-assignment {
+          font-size: 0.75rem;
+          padding: 3px 6px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .teachers-info {
+          max-width: 150px;
+          min-width: 120px;
+        }
+
+        .teachers-list {
+          gap: 2px;
+          max-height: 80px;
+        }
+        .teacher-assignment {
+          font-size: 0.7rem;
+          padding: 2px 4px;
+          min-height: 20px;
+        }
+      } /* Enhanced Responsables Display */
+      .responsables-organized {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        max-width: 240px;
+        min-width: 200px;
+        border-radius: 8px;
+        padding: 6px;
+        background-color: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+
+      .responsables-organized ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+      }
+
+      .responsables-organized li {
+        padding: 0;
+        margin: 0;
+      }
+
+      .role-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 6px;
+        background-color: rgba(var(--primary-color-rgb), 0.05);
+        border-left: 3px solid var(--primary-color);
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .role-group:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+        transform: translateX(2px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Role-specific styling with enhanced colors */
+      .role-group[title*="Filière"] {
+        border-left-color: #8b5cf6;
+        background-color: rgba(139, 92, 246, 0.08);
+      }
+      .role-group[title*="Filière"]:hover {
+        background-color: rgba(139, 92, 246, 0.12);
+      }
+
+      .role-group[title*="Section"] {
+        border-left-color: #3b82f6;
+        background-color: rgba(59, 130, 246, 0.08);
+      }
+      .role-group[title*="Section"]:hover {
+        background-color: rgba(59, 130, 246, 0.12);
+      }
+
+      .role-group[title*="TD"] {
+        border-left-color: #10b981;
+        background-color: rgba(16, 185, 129, 0.08);
+      }
+      .role-group[title*="TD"]:hover {
+        background-color: rgba(16, 185, 129, 0.12);
+      }
+
+      .role-group[title*="TP"] {
+        border-left-color: #f59e0b;
+        background-color: rgba(245, 158, 11, 0.08);
+      }
+      .role-group[title*="TP"]:hover {
+        background-color: rgba(245, 158, 11, 0.12);
+      }
+
+      .role-header {
+        font-size: 16px;
+        min-width: 24px;
+        text-align: center;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .teacher-name {
+        font-size: 0.82rem;
+        color: var(--text-color);
+        font-weight: 500;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .teacher-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        position: relative;
+        cursor: default;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      .teacher-name:hover,
+      .teacher-assignments li:hover .teacher-name {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        z-index: 2;
+      }
+
+      .teacher-name:after {
+        content: attr(title);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+        pointer-events: none;
+        z-index: 100;
+      }
+
+      .teacher-name:hover:after {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .teacher-name.unassigned {
+        color: #dc3545;
+        font-style: italic;
+        font-weight: 400;
+        position: relative;
+        padding-left: 2px;
+        opacity: 0.8;
+        background: repeating-linear-gradient(
+          45deg,
+          rgba(220, 53, 69, 0.05),
+          rgba(220, 53, 69, 0.05) 10px,
+          rgba(220, 53, 69, 0.1) 10px,
+          rgba(220, 53, 69, 0.1) 20px
+        );
+        border-radius: 4px;
+        padding: 2px 6px;
+      }
+
+      /* Compact view for smaller screens */
+      /* New styles for teacher assignments container and loading state */
+      .teacher-assignments {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px;
+        overflow: hidden;
+      }
+
+      .teacher-assignments ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 3px;
+      }
+
+      .teacher-assignments li {
+        padding: 2px 0;
+        margin: 0;
+      }
+
+      .assignment-separator {
+        color: rgba(0, 0, 0, 0.4);
+        margin: 0 2px;
+      }
+
+      .responsables-loading {
+        font-size: 0.8rem;
+        color: #666;
+        padding: 8px;
+        text-align: center;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 5px;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      .responsables-organized.error .role-group {
+        opacity: 0.85;
+      }
+
+      .teacher-name.unassigned.error {
+        color: #856404;
+        background: repeating-linear-gradient(
+          45deg,
+          rgba(255, 193, 7, 0.1),
+          rgba(255, 193, 7, 0.1) 10px,
+          rgba(255, 193, 7, 0.2) 10px,
+          rgba(255, 193, 7, 0.2) 20px
+        );
+      }
+
+      /* Role-specific header colors */
+      .role-filiere .role-header {
+        color: #8b5cf6;
+      }
+
+      .role-section .role-header {
+        color: #3b82f6;
+      }
+
+      .role-td .role-header {
+        color: #10b981;
+      }
+
+      .role-tp .role-header {
+        color: #f59e0b;
+      }
+
+      @media (max-width: 1200px) {
+        .responsables-organized {
+          max-width: 200px;
+          min-width: 180px;
+          padding: 4px;
+        }
+
+        .role-group {
+          padding: 2px 4px;
+          gap: 4px;
+        }
+
+        .teacher-name {
+          font-size: 0.75rem;
+        }
+
+        .role-header {
+          font-size: 12px;
+          min-width: 18px;
+        }
+      }
+      @media (max-width: 576px) {
+        .responsables-organized {
+          max-width: 100%;
+          min-width: 100%;
+        }
+
+        .role-group {
+          flex-wrap: nowrap;
+        }
+
+        .teacher-assignments {
+          max-width: calc(100% - 25px);
+        }
+
+        .teacher-assignments ul {
+          gap: 1px;
+        }
+
+        .teacher-assignments li {
+          padding: 1px 0;
+        }
+      }
+      @media (max-width: 768px) {
+        .responsables-organized {
+          max-width: 150px;
+          min-width: 120px;
+        }
+
+        .role-group {
+          padding: 1px 3px;
+          gap: 3px;
+        }
+
+        .teacher-name {
+          font-size: 0.7rem;
+        }
+
+        .teacher-assignments ul {
+          gap: 1px;
+        }
+
+        .teacher-assignments li {
+          padding: 1px 0;
+        }
+
+        .role-header {
+          font-size: 11px;
+          min-width: 16px;
+        }
+      }
+
+      .error-message {
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        display: none;
+      }
+
+      .form-input.error {
+        border-color: #ef4444;
+      }
+
+      .form-input.error + .error-message {
+        display: block;
+      }
+
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: border-color 0.2s;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+      }
+
+      .form-input.error:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+      }
+
+      .form-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-dark);
+      }
+
+      .btn-cancel {
+        background-color: #f3f4f6;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+      }
+
+      .btn-cancel:hover {
+        background-color: #e5e7eb;
+      }
+
+      .notification {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        color: white;
+        font-weight: 500;
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      .notification.success {
+        background-color: #10b981;
+      }
+
+      .notification.error {
+        background-color: #ef4444;
+      }
+
+      .notification.info {
+        background-color: #3b82f6;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      /* Action buttons styling */
+      .table-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      .action-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .edit-btn {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .edit-btn:hover {
+        background-color: #2563eb;
+      }
+
+      .teacher-action-btn {
+        background-color: #10b981;
+        color: white;
+      }
+
+      .teacher-action-btn:hover {
+        background-color: #059669;
+      }
+
+      .delete-btn {
+        background-color: #ef4444;
+        color: white;
+      }
+
+      .delete-btn:hover {
+        background-color: #dc2626;
+      }
+
+      .action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 24px;
+        color: #6b7280;
+        font-size: 0.875rem;
+      }
+
+      /* Enhanced timetable management styles */
+      .upload-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+      }
+
+      .upload-section h4 {
+        margin: 0 0 15px 0;
+        color: #495057;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        font-weight: 500;
+        margin-bottom: 5px;
+        color: #495057;
+        font-size: 14px;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+      }
+
+      .form-group input:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+
+      .timetables-list {
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 10px 0;
+      }
+
+      .timetable-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        background: white;
+        transition: box-shadow 0.2s ease;
+      }
+
+      .timetable-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .timetable-info h4 {
+        margin: 0 0 5px 0;
+        color: #495057;
+        font-size: 16px;
+      }
+
+      .timetable-info p {
+        margin: 0 0 5px 0;
+        color: #6c757d;
+        font-size: 14px;
+      }
+
+      .timetable-meta {
+        display: flex;
+        gap: 10px;
+        font-size: 12px;
+        color: #6c757d;
+      }
+
+      .timetable-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .timetable-actions .btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        text-decoration: none;
+        transition: background-color 0.2s ease;
+      }
+
+      .timetable-actions .btn-primary {
+        background-color: #007bff;
+        color: white;
+      }
+
+      .timetable-actions .btn-primary:hover {
+        background-color: #0056b3;
+      }
+
+      .timetable-actions .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+      }
+
+      .timetable-actions .btn-secondary:hover {
+        background-color: #545b62;
+      }
+
+      .timetable-actions .btn-danger {
+        background-color: #dc3545;
+        color: white;
+      }
+
+      .timetable-actions .btn-danger:hover {
+        background-color: #c82333;
+      }
+
+      .loading-timetables {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+        font-style: italic;
+      }
+
+      .no-timetables {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+      }
+
+      .no-timetables p {
+        margin-bottom: 15px;
+        font-size: 16px;
+      }
+
+      .error-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: #dc3545;
+      }
+
+      .error-message p {
+        margin-bottom: 15px;
+        font-size: 16px;
+      }
+
+      @media (max-width: 768px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .timetable-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 15px;
+        }
+
+        .timetable-actions {
+          width: 100%;
+          justify-content: flex-end;
+        }
+      }
+
+      .teachers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px;
+      }
+
+      .teacher-assignment {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        background-color: #f3f4f6;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        color: #374151;
+      }
+
+      .role-icon {
+        font-size: 1rem;
+      }
+
+      .teacher-name {
+        font-weight: 500;
+      }
+
+      .no-teachers {
+        color: #6b7280;
+        font-style: italic;
+        font-size: 0.875rem;
+        padding: 4px 8px;
+      }
+
+      .error-teachers {
+        color: #ef4444;
+        font-size: 0.875rem;
+        padding: 4px 8px;
+      }
+
+      .teachers-cell {
+        min-width: 200px;
+        padding: 8px;
+      }
+
+      .teachers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .teacher-assignment {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        background-color: #f3f4f6;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+      }
+
+      .role-icon {
+        font-size: 1rem;
+        min-width: 24px;
+        text-align: center;
+      }
+
+      .teacher-name {
+        font-weight: 500;
+      }
+
+      .loading-teachers {
+        color: #6b7280;
+        font-style: italic;
+        font-size: 0.875rem;
+        padding: 8px;
+        text-align: center;
+        background-color: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 4px;
+      }
+
+      .no-teachers {
+        color: #6b7280;
+        font-style: italic;
+        font-size: 0.875rem;
+        padding: 8px;
+        text-align: center;
+        background-color: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 4px;
+      }
+
+      .error-teachers {
+        color: #ef4444;
+        font-size: 0.875rem;
+        padding: 8px;
+        text-align: center;
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+      }
+
+      .teachers-container {
+        min-width: 200px;
+        padding: 8px;
+      }
+
+      .teachers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .teacher-assignment {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        background-color: #f3f4f6;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+      }
+
+      .role-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-color);
+      }
+
+      .teacher-name {
+        font-weight: 500;
+      }
+
+      .loading-teachers {
+        color: #6b7280;
+        font-style: italic;
+        font-size: 0.875rem;
+        padding: 8px;
+        text-align: center;
+        background-color: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 4px;
+      }
+
+      .no-teachers {
+        color: #6b7280;
+        font-style: italic;
+        font-size: 0.875rem;
+        padding: 8px;
+        text-align: center;
+        background-color: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 4px;
+      }
+
+      .error-teachers {
+        color: #ef4444;
+        font-size: 0.875rem;
+        padding: 8px;
+        text-align: center;
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+      }
+
+      /* Add these styles to your existing styles */
+      .timetable-btn {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .timetable-btn:hover {
+        background-color: #2563eb;
+      }
+
+      .timetable-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+      }
+
+      .tab-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        background: none;
+        color: #6b7280;
+        cursor: pointer;
+        font-weight: 500;
+        position: relative;
+      }
+
+      .tab-btn.active {
+        color: var(--primary-color);
+      }
+
+      .tab-btn.active::after {
+        content: "";
+        position: absolute;
+        bottom: -0.5rem;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--primary-color);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .timetable-actions {
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .timetables-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .timetable-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .timetable-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .timetable-title {
+        font-weight: 500;
+        color: #111827;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+      }
+
+      .timetable-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+
+      .timetable-date,
+      .timetable-academic-year,
+      .timetable-description {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .timetable-actions {
+        display: flex;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .timetable-action-btn.view {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+
+      .timetable-action-btn.view:hover {
+        background-color: #d1d5db;
+      }
+
+      .timetable-action-btn.delete {
+        background-color: #fee2e2;
+        color: #ef4444;
+      }
+
+      .timetable-action-btn.delete:hover {
+        background-color: #fecaca;
+      }
+
+      .no-timetables {
+        text-align: center;
+        padding: 2rem;
+        color: #6b7280;
+        font-style: italic;
+        background-color: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 0.5rem;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+      }
+
+      .btn-sm {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+      }
+
+      .btn-primary {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: #2563eb;
+      }
+
+      .btn-secondary {
+        background-color: #6b7280;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background-color: #4b5563;
+      }
+
+      .btn-danger {
+        background-color: #ef4444;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background-color: #dc2626;
+      }
+
+      .btn-disabled {
+        background-color: #d1d5db;
+        color: #6b7280;
+        cursor: not-allowed;
+      }
+
+      .space-x-2 > * + * {
+        margin-left: 0.5rem;
+      }
+
+      /* Timetable Management Styles */
+      .timetable-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .timetable-info {
+        flex: 1;
+      }
+
+      .timetable-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .timetable-description {
+        color: #666;
+        margin: 0 0 0.75rem 0;
+      }
+
+      .timetable-meta {
+        display: flex;
+        gap: 1rem;
+        color: #666;
+        font-size: 0.875rem;
+      }
+
+      .timetable-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+      }
+
+      .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+      }
+
+      .btn-primary {
+        background: #2563eb;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #1d4ed8;
+      }
+
+      .btn-secondary {
+        background: #64748b;
+        color: white;
+        text-decoration: none;
+      }
+
+      .btn-secondary:hover {
+        background: #475569;
+      }
+
+      .btn-danger {
+        background: #dc2626;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #b91c1c;
+      }
+
+      .btn-disabled {
+        background: #e5e7eb;
+        color: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .no-timetables {
+        text-align: center;
+        padding: 2rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        color: #6b7280;
+      }
+
+      .error-message {
+        text-align: center;
+        padding: 2rem;
+        background: #fee2e2;
+        border-radius: 8px;
+        color: #991b1b;
+      }
+
+      .material-icons {
+        font-size: 1.25rem;
+      }
+
+      .mt-4 {
+        margin-top: 1rem;
+      }
+
+      /* Schedule Management Styles */
+      .upload-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+      }
+
+      .upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .form-group label {
+        font-weight: 500;
+        color: #495057;
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .form-group small {
+        color: #6c757d;
+        font-size: 12px;
+      }
+
+      .schedules-section {
+        margin-top: 20px;
+      }
+
+      .schedules-list {
+        display: grid;
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .schedule-item {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .schedule-info h4 {
+        margin: 0 0 5px 0;
+        color: #212529;
+      }
+
+      .schedule-info p {
+        margin: 3px 0;
+        color: #6c757d;
+        font-size: 14px;
+      }
+
+      .schedule-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .schedule-actions button {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .btn-view {
+        background: #e9ecef;
+        color: #495057;
+      }
+
+      .btn-download {
+        background: #e7f5ff;
+        color: #1971c2;
+      }
+
+      .btn-delete {
+        background: #fff5f5;
+        color: #e03131;
+      }
+
+      .btn-view:hover {
+        background: #dee2e6;
+      }
+
+      .btn-download:hover {
+        background: #d0ebff;
+      }
+
+      .btn-delete:hover {
+        background: #ffe3e3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar - will be loaded via JavaScript -->
+      <div id="sidebar-container"></div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="header">
+          <h1 class="page-title">Gestion des Sections</h1>
+          <div class="header-actions">
+            <!-- Button removed -->
+          </div>
+        </div>
+
+        <div class="content-container">
+          <!-- Status Messages -->
+          <div
+            id="status-message"
+            class="status-message"
+            style="display: none"
+          ></div>
+
+          <!-- Filters -->
+          <div class="filters">
+            <div class="filter-group">
+              <label for="specialty-filter">Spécialité:</label>
+              <select id="specialty-filter" class="filter-select">
+                <option value="all">Toutes</option>
+                <!-- Options will be loaded dynamically -->
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="level-filter">Niveau:</label>
+              <select id="level-filter" class="filter-select">
+                <option value="all">Tous</option>
+                <option value="L1">L1</option>
+                <option value="L2">L2</option>
+                <option value="L3">L3</option>
+                <option value="M1">M1</option>
+                <option value="M2">M2</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="capacity-filter">Capacité:</label>
+              <select id="capacity-filter" class="filter-select">
+                <option value="all">Toutes</option>
+                <option value="available">Places disponibles</option>
+                <option value="limited">Places limitées</option>
+                <option value="full">Complètes</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="search">Recherche:</label>
+              <input
+                type="text"
+                id="search"
+                class="filter-input"
+                placeholder="Rechercher..."
+              />
+            </div>
+          </div>
+
+          <!-- Sections Table -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Section</th>
+                  <th>Niveau</th>
+                  <th>Spécialité</th>
+                  <th>Étudiants</th>
+                  <th>Responsables</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sectionsTableBody">
+                <!-- Sections will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div class="pagination" id="pagination">
+            <!-- Pagination will be added here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Section Modal -->
+    <div id="section-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2 id="modal-title">Ajouter une section</h2>
+        <form id="section-form" class="form section-form">
+          <input type="hidden" id="section-id" />
+          <div class="form-group">
+            <label for="section-name">Nom de la section:</label>
+            <input
+              type="text"
+              id="section-name"
+              class="form-input"
+              required
+              pattern="[A-Za-z0-9 \-]+"
+              title="Le nom doit contenir uniquement des lettres, chiffres, espaces et tirets"
+              minlength="1"
+              maxlength="50"
+            />
+            <div class="error-message" id="section-name-error"></div>
+          </div>
+          <div class="form-group">
+            <label for="section-code">Code:</label>
+            <input
+              type="text"
+              id="section-code"
+              class="form-input"
+              readonly
+              placeholder="Auto-généré (Spécialité-Niveau-Nom)"
+              title="Code généré automatiquement au format Spécialité-Niveau-Nom"
+            />
+            <div class="error-message" id="section-code-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="section-specialty">Spécialité:</label>
+            <input
+              type="text"
+              id="section-specialty"
+              class="form-input"
+              required
+              pattern="[A-Za-z \-]+"
+              title="La spécialité doit contenir uniquement des lettres, espaces et tirets"
+              minlength="3"
+              maxlength="50"
+              placeholder="Ex: Informatique, Mathématiques, etc."
+            />
+            <div class="error-message" id="section-specialty-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="section-department">Département:</label>
+            <select id="section-department" class="form-input" required>
+              <option value="">Sélectionner un département</option>
+              <!-- Departments will be loaded dynamically -->
+            </select>
+            <div class="error-message" id="section-department-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="section-level">Niveau:</label>
+            <select id="section-level" class="form-input" required>
+              <option value="">Sélectionner un niveau</option>
+              <option value="L1">L1</option>
+              <option value="L2">L2</option>
+              <option value="L3">L3</option>
+              <option value="M1">M1</option>
+              <option value="M2">M2</option>
+            </select>
+            <div class="error-message" id="section-level-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="section-capacity">Capacité:</label>
+            <input
+              type="number"
+              id="section-capacity"
+              class="form-input"
+              required
+              min="1"
+              max="500"
+              title="La capacité doit être comprise entre 1 et 500"
+            />
+            <div class="error-message" id="section-capacity-error"></div>
+          </div>
+
+          <div class="form-buttons">
+            <button
+              type="button"
+              class="btn btn-cancel"
+              id="cancel-section-btn"
+            >
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary" id="save-section-btn">
+              Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Timetable Upload Modal -->
+    <div id="timetable-modal" class="modal timetable-modal">
+      <div class="modal-content">
+        <span class="close-modal" id="close-timetable-modal">&times;</span>
+        <h2 id="timetable-modal-title">Télécharger l'emploi du temps</h2>
+
+        <form id="timetable-form" class="form">
+          <input type="hidden" id="timetable-section-id" />
+          <input type="hidden" id="timetable-type" value="regular" />
+
+          <div class="form-group">
+            <label for="timetable-title">Titre:</label>
+            <input
+              type="text"
+              id="timetable-title"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="timetable-description">Description (optionnel):</label>
+            <textarea
+              id="timetable-description"
+              class="form-input"
+              rows="2"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="timetable-semester">Semestre:</label>
+            <select id="timetable-semester" class="form-input" required>
+              <option value="S1">Semestre 1</option>
+              <option value="S2">Semestre 2</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="timetable-academic-year">Année académique:</label>
+            <input
+              type="text"
+              id="timetable-academic-year"
+              class="form-input"
+              value="2024-2025"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Fichier:</label>
+            <div class="file-upload-container" id="file-upload-container">
+              <div class="file-upload-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="48"
+                  height="48"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1"
+                >
+                  <path
+                    d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"
+                  ></path>
+                  <path d="M12 12v9"></path>
+                  <path d="m16 16-4-4-4 4"></path>
+                </svg>
+              </div>
+              <p class="file-upload-text">
+                Glissez-déposez votre fichier ici ou
+              </p>
+              <label class="file-upload-btn">
+                Parcourir...
+                <input
+                  type="file"
+                  id="timetable-file"
+                  class="file-upload-input"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                />
+              </label>
+            </div>
+
+            <div class="selected-file" id="selected-file">
+              <div class="selected-file-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
+                  <path
+                    d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"
+                  ></path>
+                </svg>
+              </div>
+              <span class="selected-file-name" id="selected-file-name"
+                >filename.pdf</span
+              >
+              <div class="selected-file-remove" id="selected-file-remove">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-buttons">
+            <button
+              type="button"
+              class="btn btn-cancel"
+              id="cancel-timetable-btn"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="save-timetable-btn"
+            >
+              Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Timetables View Modal (will be implemented) -->
+    <div id="view-timetables-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" id="close-view-timetables-modal"
+          >&times;</span
+        >
+        <h2 id="view-timetables-modal-title">Emplois du temps</h2>
+
+        <!-- No tabs needed as we're only keeping regular timetables -->
+
+        <div class="tab-content active" id="regular-timetables">
+          <!-- Upload Form for Regular Timetables -->
+          <div class="upload-section">
+            <h4>Télécharger un nouvel emploi du temps</h4>
+            <form id="regular-upload-form" class="upload-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="regular-title">Titre</label>
+                  <input
+                    type="text"
+                    id="regular-title"
+                    name="title"
+                    required
+                    placeholder="Ex: Emploi du temps Semestre 1"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="regular-file">Fichier</label>
+                  <input
+                    type="file"
+                    id="regular-file"
+                    name="document"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="regular-description">Description (optionnel)</label>
+                <textarea
+                  id="regular-description"
+                  name="description"
+                  rows="2"
+                  placeholder="Description de l'emploi du temps"
+                ></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Télécharger
+              </button>
+            </form>
+          </div>
+
+          <!-- List of Regular Timetables -->
+          <div id="regular-timetables-list" class="timetables-list">
+            <div class="loading-timetables">
+              Chargement des emplois du temps...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teacher Assignment Modal -->
+    <div id="teacher-assignment-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" id="close-teacher-assignment-modal"
+          >&times;</span
+        >
+        <h2 id="teacher-assignment-modal-title">Assigner des responsables</h2>
+
+        <form
+          id="teacher-assignment-form"
+          class="form"
+          onsubmit="return false;"
+        >
+          <input type="hidden" id="assignment-section-id" />
+
+          <div class="form-group">
+            <label>Section:</label>
+            <div id="assignment-section-info" class="section-info-display">
+              <!-- Section info will be displayed here -->
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="teacher-role">Rôle:</label>
+            <select id="teacher-role" class="form-input" required>
+              <option value="">Sélectionner un rôle</option>
+              <option value="filiere">Responsable de Filière</option>
+              <option value="section">Responsable de Section</option>
+              <option value="td">Responsable TD</option>
+              <option value="tp">Responsable TP</option>
+            </select>
+          </div>
+
+          <div
+            class="form-group"
+            id="group-selection-container"
+            style="display: none"
+          >
+            <label for="group-select"
+              >Groupe:
+              <span class="required" style="color: #dc3545">*</span></label
+            >
+            <select id="group-select" class="form-input">
+              <option value="">Sélectionner un groupe</option>
+              <!-- Groups will be loaded dynamically -->
+            </select>
+            <small class="form-help" style="color: #666; font-size: 0.85rem">
+              Requis pour les responsables TD/TP
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="teacher-select">Responsable:</label>
+            <select id="teacher-select" class="form-input" required>
+              <option value="">Sélectionner un responsable</option>
+              <!-- Teachers will be loaded dynamically -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Responsables actuellement assignés:</label>
+            <div id="current-assignments" class="current-assignments">
+              <!-- Current assignments will be displayed here -->
+            </div>
+          </div>
+
+          <div class="form-buttons">
+            <button
+              type="button"
+              class="btn btn-cancel"
+              id="cancel-teacher-assignment-btn"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-teacher-assignment-btn"
+              onclick="handleTeacherAssignment(event)"
+            >
+              Assigner
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add this after the teacher assignment modal -->
+    <!-- Timetable Management Modal -->
+    <div id="timetable-management-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal" id="close-timetable-management-modal"
+          >&times;</span
+        >
+        <h2 id="timetable-management-title">Gestion des Emplois du Temps</h2>
+
+        <div class="timetable-tabs">
+          <button class="tab-btn active" data-tab="regular-timetables">
+            Emplois du temps
+          </button>
+          <!-- Removed exam timetable tab button -->
+        </div>
+
+        <div
+          class="tab-content active"
+          id="regular-timetables-content"
+          style="display: block"
+        >
+          <div class="timetable-actions">
+            <button class="btn btn-primary" id="upload-regular-timetable">
+              <span class="material-icons">upload</span> Télécharger un emploi
+              du temps
+            </button>
+            <button
+              class="btn btn-secondary"
+              id="view-all-regular-timetables"
+              onclick="openAllTimetablesInNewPages()"
+            >
+              <span class="material-icons">open_in_new</span> Afficher tous dans
+              de nouvelles pages
+            </button>
+          </div>
+          <div id="mgmt-regular-timetables-list" class="timetables-list">
+            <!-- Regular timetables will be listed here -->
+            <div class="loading-timetables">
+              Chargement des emplois du temps...
+            </div>
+          </div>
+        </div>
+
+        <!-- Removed exam timetables content section -->
+      </div>
+    </div>
+
+    <!-- Schedule Management Modal -->
+    <div id="schedule-management-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Gestion des Emplois du Temps</h2>
+
+        <!-- Upload Form -->
+        <div class="upload-section">
+          <h3>Télécharger un nouvel emploi du temps</h3>
+          <form id="schedule-upload-form" class="upload-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="schedule-title">Titre</label>
+                <input type="text" id="schedule-title" required />
+              </div>
+              <div class="form-group">
+                <label for="schedule-type">Type</label>
+                <select id="schedule-type" required>
+                  <option value="regular">Emploi du temps régulier</option>
+                  <!-- Removed exam option -->
+                  <option value="special">Emploi du temps spécial</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="schedule-description">Description (optionnel)</label>
+              <textarea id="schedule-description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="schedule-file">Fichier</label>
+              <input
+                type="file"
+                id="schedule-file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+              />
+              <small>Formats acceptés: PDF, JPG, PNG (max 5MB)</small>
+            </div>
+            <button type="submit" class="btn-primary">
+              <i class="fas fa-upload"></i> Télécharger
+            </button>
+          </form>
+        </div>
+
+        <!-- Current Schedules -->
+        <div class="schedules-section">
+          <h3>Emplois du temps actuels</h3>
+          <div id="schedules-list" class="schedules-list">
+            <!-- Schedules will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let allSections = [];
+      let filteredSections = [];
+      let currentPage = 1;
+      let itemsPerPage = 10;
+      let authToken =
+        localStorage.getItem("admin_token") ||
+        sessionStorage.getItem("admin_token");
+      let adminRole =
+        localStorage.getItem("admin_role") ||
+        sessionStorage.getItem("admin_role");
+
+      // DOM Elements
+      let statusMessage = document.getElementById("status-message");
+      let sectionsTableBody = document.getElementById("sectionsTableBody");
+      let paginationElement = document.getElementById("pagination");
+      let specialtyFilter = document.getElementById("specialty-filter");
+      let levelFilter = document.getElementById("level-filter");
+      let capacityFilter = document.getElementById("capacity-filter");
+      let searchInput = document.getElementById("search");
+      let sectionModal = document.getElementById("section-modal");
+      let modalTitle = document.getElementById("modal-title");
+      let sectionForm = document.getElementById("section-form");
+      let sectionIdInput = document.getElementById("section-id");
+      let sectionNameInput = document.getElementById("section-name");
+      let sectionCodeInput = document.getElementById("section-code");
+      let sectionSpecialtyInput = document.getElementById("section-specialty");
+      let sectionLevelInput = document.getElementById("section-level");
+      let sectionCapacityInput = document.getElementById("section-capacity");
+      let closeModalBtn = document.querySelector(".close-modal");
+      let cancelBtn = document.getElementById("cancel-section-btn");
+
+      // Event listeners
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          // Initialize DOM elements first
+          initializeDOMElements();
+
+          // Verify authentication using the admin-auth.js helper
+          const isAuthenticated = await verifyAdminToken();
+          if (!isAuthenticated) {
+            console.error("Authentication failed");
+            return;
+          } // Load the sidebar
+          await loadSidebar();
+
+          // Test API connectivity first
+          console.log("Testing API connectivity before loading data...");
+          await testAPIConnectivity();
+
+          // Load departments and sections data
+          await Promise.all([loadDepartments(), loadSections()]);
+
+          // Setup event listeners
+          setupEventListeners();
+        } catch (error) {
+          console.error("Initialization error:", error);
+          showMessage(
+            "Une erreur est survenue lors de l'initialisation de la page.",
+            "error"
+          );
+        }
+      });
+
+      function initializeDOMElements() {
+        // Initialize all DOM elements
+        statusMessage = document.getElementById("status-message");
+        sectionsTableBody = document.getElementById("sectionsTableBody");
+        paginationElement = document.getElementById("pagination");
+        specialtyFilter = document.getElementById("specialty-filter");
+        levelFilter = document.getElementById("level-filter");
+        capacityFilter = document.getElementById("capacity-filter");
+        searchInput = document.getElementById("search");
+        sectionModal = document.getElementById("section-modal");
+        modalTitle = document.getElementById("modal-title");
+        sectionForm = document.getElementById("section-form");
+        sectionIdInput = document.getElementById("section-id");
+        sectionNameInput = document.getElementById("section-name");
+        sectionCodeInput = document.getElementById("section-code");
+        sectionSpecialtyInput = document.getElementById("section-specialty");
+        sectionLevelInput = document.getElementById("section-level");
+        sectionCapacityInput = document.getElementById("section-capacity");
+        closeModalBtn = document.querySelector(".close-modal");
+        cancelBtn = document.getElementById("cancel-section-btn");
+      }
+
+      async function loadSidebar() {
+        try {
+          // Get role from storage
+          const role =
+            localStorage.getItem("admin_role") ||
+            sessionStorage.getItem("admin_role");
+
+          console.log("Loading sidebar for role:", role);
+
+          // Map roles to sidebar files
+          const sidebarFiles = {
+            doyen: "admin-sidebar-doyen.html",
+            "vice-doyen": "admin-sidebar-vice-doyen.html",
+            "chef-de-departement": "admin-sidebar-chef-departement.html",
+            "chef-de-specialite": "admin-sidebar-chef-specialite.html",
+            secretaire: "admin-sidebar-secretaire.html",
+          };
+
+          // Get the sidebar file for the role
+          const sidebarFile = sidebarFiles[role] || sidebarFiles["doyen"]; // Default to doyen
+
+          console.log("Loading sidebar file:", sidebarFile);
+
+          // Load the sidebar HTML
+          const response = await fetch(sidebarFile);
+          const html = await response.text();
+
+          // Insert the sidebar HTML into the container
+          document.getElementById("sidebar-container").innerHTML = html;
+
+          // Set up logout button event listener
+          const logoutBtn = document.getElementById("logout-btn");
+          if (logoutBtn && typeof handleAdminLogout === "function") {
+            logoutBtn.addEventListener("click", handleAdminLogout);
+          }
+
+          // Update admin info manually since scripts in innerHTML don't execute
+          updateSidebarAdminInfo();
+
+          // Set active menu item
+          setSidebarActiveMenuItem();
+
+          console.log("✅ Sidebar loaded successfully for role:", role);
+        } catch (error) {
+          console.error("Error loading sidebar:", error);
+          showMessage("Impossible de charger la barre latérale.", "error");
+        }
+      } // Test API connectivity with better error handling
+      async function testAPIConnectivity() {
+        try {
+          console.log("Testing API connectivity...");
+          const response = await fetch(`${API_BASE_URL}/sections`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+            mode: "cors",
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          console.log("API connectivity test response:", response.status);
+          return response;
+        } catch (error) {
+          console.error("API connectivity test failed:", error);
+          createNotification(
+            "Impossible de se connecter au serveur. Vérifiez votre connexion internet et que le serveur est en cours d'exécution.",
+            "error"
+          );
+          return null;
+        }
+      }
+
+      async function loadSections() {
+        try {
+          createNotification("Chargement des sections...", "info");
+
+          // First try to use the admin API
+          let data;
+          if (window.adminAPI && window.adminAPI.getSections) {
+            try {
+              data = await window.adminAPI.getSections();
+            } catch (apiError) {
+              console.warn(
+                "Error using adminAPI.getSections, falling back to direct API call:",
+                apiError
+              );
+              data = null;
+            }
+          }
+
+          // If admin API failed, try direct API call
+          if (!data) {
+            try {
+              const response = await fetch(`${API_BASE_URL}/sections`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${authToken}`,
+                },
+                mode: "cors",
+                credentials: "include",
+              });
+
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              data = await response.json();
+            } catch (fetchError) {
+              console.error("Error in direct API call:", fetchError);
+              throw fetchError;
+            }
+          }
+
+          // Ensure proper handling of the data structure
+          allSections = Array.isArray(data.sections)
+            ? data.sections
+            : Array.isArray(data)
+            ? data
+            : [];
+
+          // If still no data, try mock data as last resort
+          if (allSections.length === 0 && window.adminMocks) {
+            console.warn("No data received, using mock data");
+            allSections = window.adminMocks.getMockSections();
+          }
+
+          // If no sections were loaded, set to empty array
+          if (!allSections || allSections.length === 0) {
+            allSections = [];
+            console.warn("No sections data received from any source.");
+          }
+
+          // Load unique specialties for filter
+          loadSpecialties();
+
+          // Apply initial filtering
+          filterSections();
+
+          createNotification("", "clear");
+        } catch (error) {
+          console.error("Error loading sections:", error);
+          allSections = [];
+          createNotification(
+            "Erreur lors du chargement des sections. Veuillez réessayer.",
+            "error"
+          );
+          sectionsTableBody.innerHTML = `
+            <tr>
+              <td colspan="5" class="error-message">
+                Impossible de charger les sections.
+                <button class="retry-btn" onclick="loadSections()">Réessayer</button>
+              </td>
+            </tr>
+          `;
+        }
+      }
+
+      // Add loadDepartments function
+      async function loadDepartments() {
+        try {
+          const departmentSelect =
+            document.getElementById("section-department");
+          if (!departmentSelect) return;
+
+          // Clear existing options except the first one
+          while (departmentSelect.options.length > 1) {
+            departmentSelect.remove(1);
+          }
+
+          // Try to get departments using adminAPI first
+          let departments = [];
+          if (window.adminAPI && window.adminAPI.getDepartments) {
+            try {
+              departments = await window.adminAPI.getDepartments();
+            } catch (apiError) {
+              console.warn("Error using adminAPI.getDepartments:", apiError);
+              departments = [];
+            }
+          }
+
+          // If adminAPI failed, try direct API call
+          if (!departments || departments.length === 0) {
+            try {
+              const response = await fetch(`${API_BASE_URL}/departments`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${authToken}`,
+                },
+              });
+
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              const data = await response.json();
+              departments = Array.isArray(data) ? data : data.data || [];
+            } catch (error) {
+              console.error("Error fetching departments:", error);
+              departments = [];
+            }
+          }
+
+          // Add departments to select
+          departments.forEach((dept) => {
+            const option = document.createElement("option");
+            option.value = dept.id;
+            option.textContent = dept.name;
+            departmentSelect.appendChild(option);
+          });
+        } catch (error) {
+          console.error("Error loading departments:", error);
+          showNotification(
+            "Erreur lors du chargement des départements",
+            "error"
+          );
+        }
+      }
+
+      function loadSpecialties() {
+        // Get unique specialties from sections
+        const specialties = [
+          ...new Set(
+            allSections
+              .filter(
+                (section) =>
+                  section && (section.specialty || section.specialite)
+              )
+              .map((section) => section.specialty || section.specialite)
+          ),
+        ];
+
+        // Clear existing options (except "All")
+        while (specialtyFilter.options.length > 1) {
+          specialtyFilter.remove(1);
+        }
+
+        // Add specialty options
+        specialties.forEach((specialty) => {
+          if (specialty) {
+            const option = document.createElement("option");
+            option.value = specialty;
+            option.textContent = specialty;
+            specialtyFilter.appendChild(option);
+          }
+        });
+      }
+      function setupEventListeners() {
+        // Filter changes
+        if (specialtyFilter) {
+          specialtyFilter.addEventListener("change", () => filterSections());
+        }
+        if (levelFilter) {
+          levelFilter.addEventListener("change", () => filterSections());
+        }
+        if (capacityFilter) {
+          capacityFilter.addEventListener("change", () => filterSections());
+        }
+        if (searchInput) {
+          searchInput.addEventListener("input", () => filterSections());
+        }
+
+        // Add section button
+        const addSectionBtn = document.getElementById("add-section-btn");
+        if (addSectionBtn) {
+          console.log("Setting up Add Section button click handler");
+          addSectionBtn.addEventListener("click", function () {
+            console.log("Add Section button clicked");
+            openAddSectionModal();
+          });
+        }
+
+        // Modal close button
+        if (closeModalBtn) {
+          closeModalBtn.addEventListener("click", closeModal);
+        }
+
+        // Cancel button
+        if (cancelBtn) {
+          cancelBtn.addEventListener("click", closeModal);
+        }
+
+        // Form submission
+        if (sectionForm) {
+          sectionForm.addEventListener("submit", handleFormSubmit);
+        }
+
+        // Teacher assignment modal event listeners
+        const teacherAssignmentModal = document.getElementById(
+          "teacher-assignment-modal"
+        );
+        const teacherAssignmentForm = document.getElementById(
+          "teacher-assignment-form"
+        );
+        const closeTeacherAssignmentModal = document.getElementById(
+          "close-teacher-assignment-modal"
+        );
+        const cancelTeacherAssignmentBtn = document.getElementById(
+          "cancel-teacher-assignment-btn"
+        );
+
+        // Form submit handler removed - using button click instead
+        // The form has onsubmit="return false;" and button is type="button"
+
+        if (closeTeacherAssignmentModal) {
+          closeTeacherAssignmentModal.addEventListener("click", () => {
+            if (teacherAssignmentModal) {
+              teacherAssignmentModal.style.display = "none";
+            }
+          });
+        }
+
+        if (cancelTeacherAssignmentBtn) {
+          cancelTeacherAssignmentBtn.addEventListener("click", () => {
+            if (teacherAssignmentModal) {
+              teacherAssignmentModal.style.display = "none";
+            }
+          });
+        }
+
+        // Close teacher assignment modal when clicking outside
+        if (teacherAssignmentModal) {
+          window.addEventListener("click", function (event) {
+            if (event.target === teacherAssignmentModal) {
+              teacherAssignmentModal.style.display = "none";
+            }
+          });
+        }
+
+        // Close modal when clicking outside
+        if (sectionModal) {
+          window.addEventListener("click", function (event) {
+            if (event.target === sectionModal) {
+              closeModal();
+            }
+          });
+        }
+
+        // Role selection change handler
+        const teacherRoleSelect = document.getElementById("teacher-role");
+        if (teacherRoleSelect) {
+          teacherRoleSelect.addEventListener(
+            "change",
+            handleRoleSelectionChange
+          );
+        }
+
+        // Also add the handler to the select element directly for immediate response
+        const roleSelect = document.querySelector("#teacher-role");
+        if (roleSelect) {
+          roleSelect.onchange = handleRoleSelectionChange;
+        }
+      }
+
+      function filterSections() {
+        const specialty = specialtyFilter.value;
+        const level = levelFilter.value;
+        const capacity = capacityFilter.value;
+        const search = searchInput.value.toLowerCase();
+
+        filteredSections = allSections.filter((section) => {
+          // Specialty filter
+          if (specialty !== "all" && section.specialite !== specialty) {
+            return false;
+          }
+
+          // Level filter
+          if (level !== "all" && section.niveau !== level) {
+            return false;
+          }
+
+          // Capacity filter
+          if (capacity !== "all") {
+            const capacityPercent =
+              (section.etudiantsCount / section.capacite) * 100;
+
+            if (capacity === "available" && capacityPercent >= 80) {
+              return false;
+            } else if (
+              capacity === "limited" &&
+              (capacityPercent < 80 || capacityPercent >= 100)
+            ) {
+              return false;
+            } else if (capacity === "full" && capacityPercent < 100) {
+              return false;
+            }
+          }
+
+          // Search filter
+          if (
+            search &&
+            !section.nom?.toLowerCase().includes(search) &&
+            !section.code?.toLowerCase().includes(search) &&
+            !section.specialite?.toLowerCase().includes(search)
+          ) {
+            return false;
+          }
+
+          return true;
+        });
+
+        // Render the first page
+        currentPage = 1;
+        renderSections();
+      }
+
+      function renderSections() {
+        // Calculate pagination
+        const totalPages = Math.ceil(filteredSections.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(
+          startIndex + itemsPerPage,
+          filteredSections.length
+        );
+        const currentSections = filteredSections.slice(startIndex, endIndex);
+
+        // Clear table
+        sectionsTableBody.innerHTML = "";
+
+        // Show 'no data' if nothing fetched at all
+        if (!allSections || allSections.length === 0) {
+          sectionsTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" class="no-data">Aucune section disponible.</td>
+            </tr>
+          `;
+          paginationElement.innerHTML = "";
+          return;
+        }
+
+        // Show 'no match' if filters result in empty
+        if (currentSections.length === 0) {
+          sectionsTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" class="no-data">Aucune section ne correspond aux critères sélectionnés.</td>
+            </tr>
+          `;
+          paginationElement.innerHTML = "";
+          return;
+        }
+
+        // Render sections
+        currentSections.forEach((section) => {
+          // Handle potential different property names from the API
+          const sectionName = section.name || section.nom || "Section sans nom";
+          const sectionCode = section.code || "N/A";
+          const sectionLevel = section.level || section.niveau || "N/A";
+          const sectionSpecialty =
+            section.specialty || section.specialite || "Non spécifiée";
+
+          // Handle student count - since it's not in the API response, we'll show a dash
+          const studentCountDisplay = "-";
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>
+              <div class="section-info">
+                <div class="section-icon">${sectionLevel.charAt(0) || "S"}</div>
+                <div class="section-details">
+                  <span class="section-name">${sectionName}</span>
+                  <span class="section-code">${sectionCode}</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="level-badge">${sectionLevel}</span></td>
+            <td>${sectionSpecialty}</td>
+            <td>${studentCountDisplay}</td>
+            <td class="teachers-cell">
+              <div id="teachers-${section.id}" class="teachers-container">
+                <div class="loading-teachers">Chargement...</div>
+              </div>
+            </td>
+            <td>
+              <div class="section-actions">
+                <button class="action-btn edit-btn" data-id="${
+                  section.id
+                }" title="Modifier">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button class="action-btn teacher-action-btn" data-id="${
+                  section.id
+                }" title="Assigner responsables">
+                  <span class="material-icons">person_add</span>
+                </button>
+                <button class="action-btn schedule-btn" data-id="${
+                  section.id
+                }" title="Gérer l'emploi du temps">
+                  <span class="material-icons">schedule</span>
+                </button>
+                <button class="action-btn delete-btn" data-id="${
+                  section.id
+                }" title="Supprimer">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </td>
+          `;
+
+          // Add section to table
+          sectionsTableBody.appendChild(row);
+
+          // Add event listeners to the buttons
+          row
+            .querySelector(".edit-btn")
+            .addEventListener("click", () => openEditSectionModal(section));
+          row
+            .querySelector(".teacher-action-btn")
+            .addEventListener("click", () =>
+              openTeacherAssignmentModal(section)
+            );
+          row
+            .querySelector(".schedule-btn")
+            .addEventListener("click", () =>
+              openScheduleManagement(section.id)
+            );
+          row
+            .querySelector(".delete-btn")
+            .addEventListener("click", () => confirmDeleteSection(section));
+
+          // Load teachers for this section
+          loadSectionTeachers(section.id).catch((error) => {
+            console.error(
+              `Error loading teachers for section ${section.id}:`,
+              error
+            );
+            const container = document.getElementById(`teachers-${section.id}`);
+            if (container) {
+              container.innerHTML =
+                '<div class="error-teachers">Erreur de chargement</div>';
+            }
+          });
+        });
+
+        // Render pagination
+        renderPagination(totalPages);
+      }
+
+      // Function to load and display teachers for a section
+      async function loadSectionTeachers(sectionId) {
+        const container = document.getElementById(`teachers-${sectionId}`);
+        if (!container) {
+          console.warn(`Container for section ${sectionId} teachers not found`);
+          return;
+        }
+
+        try {
+          // Show loading state
+          container.innerHTML =
+            '<div class="loading-teachers">Chargement...</div>';
+
+          // Fetch section responsables
+          const response = await fetch(
+            `${API_BASE_URL}/sections/${sectionId}/responsables`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const responsables = await response.json();
+          console.log(
+            `Loaded ${responsables.length} responsables for section ${sectionId}`
+          );
+
+          // Display responsables
+          if (!responsables || responsables.length === 0) {
+            container.innerHTML =
+              '<div class="no-teachers">Aucun responsable assigné</div>';
+            return;
+          }
+
+          // Group responsables by role
+          const groupedResponsables = {
+            filiere: responsables.filter((r) => r.role === "filiere"),
+            section: responsables.filter((r) => r.role === "section"),
+            td: responsables.filter((r) => r.role === "td"),
+            tp: responsables.filter((r) => r.role === "tp"),
+          };
+
+          let html = '<div class="teachers-list">';
+
+          Object.entries(groupedResponsables).forEach(
+            ([role, roleResponsables]) => {
+              if (roleResponsables.length > 0) {
+                roleResponsables.forEach((responsable) => {
+                  const teacherName = responsable.enseignant
+                    ? `${responsable.enseignant.firstName || ""} ${
+                        responsable.enseignant.lastName || ""
+                      }`.trim()
+                    : `Enseignant #${responsable.enseignantId}`;
+
+                  html += `
+                  <div class="teacher-assignment">
+                    ${getRoleIcon(role)}
+                    <span class="teacher-name">${teacherName}</span>
+                  </div>
+                `;
+                });
+              }
+            }
+          );
+
+          html += "</div>";
+          container.innerHTML = html;
+        } catch (error) {
+          console.error(
+            `Error loading teachers for section ${sectionId}:`,
+            error
+          );
+          container.innerHTML =
+            '<div class="error-teachers">Erreur de chargement</div>';
+        }
+      } // Function to load and display teachers for a section is now handled by js/section-responsables.js
+
+      // Update the getRoleIcon function to use Material Icons
+      function getRoleIcon(role) {
+        const roleIcons = {
+          filiere: "school",
+          section: "assignment",
+          td: "menu_book",
+          tp: "science",
+          CHEF_DEPARTEMENT: "school",
+          RESPONSABLE_SECTION: "assignment",
+          RESPONSABLE_MODULE: "menu_book",
+          ENSEIGNANT: "science",
+        };
+        return `<span class="material-icons">${
+          roleIcons[role] || "person"
+        }</span>`;
+      }
+
+      // Update the getRoleDisplayName function
+      function getRoleDisplayName(role) {
+        const roleNames = {
+          filiere: "Responsable de Filière",
+          section: "Responsable de Section",
+          td: "Responsable TD",
+          tp: "Responsable TP",
+          CHEF_DEPARTEMENT: "Chef de Département",
+          RESPONSABLE_SECTION: "Responsable de Section",
+          RESPONSABLE_MODULE: "Responsable de Module",
+          ENSEIGNANT: "Enseignant",
+        };
+        return roleNames[role] || role;
+      }
+
+      function renderPagination(totalPages) {
+        if (totalPages <= 1) {
+          paginationElement.innerHTML = "";
+          return;
+        }
+
+        let paginationHTML = "";
+
+        // Previous button
+        paginationHTML += `
+                <button class="pagination-btn previous ${
+                  currentPage === 1 ? "disabled" : ""
+                }"
+                    ${currentPage === 1 ? "disabled" : ""}>
+                    &laquo; Précédent
+                </button>
+            `;
+
+        // Page buttons
+        for (let i = 1; i <= totalPages; i++) {
+          paginationHTML += `
+                    <button class="pagination-btn page-num ${
+                      i === currentPage ? "active" : ""
+                    }" data-page="${i}">
+                        ${i}
+                    </button>
+                `;
+        }
+
+        // Next button
+        paginationHTML += `
+                <button class="pagination-btn next ${
+                  currentPage === totalPages ? "disabled" : ""
+                }"
+                    ${currentPage === totalPages ? "disabled" : ""}>
+                    Suivant &raquo;
+                </button>
+            `;
+
+        paginationElement.innerHTML = paginationHTML;
+
+        // Add event listeners to pagination buttons
+        document
+          .querySelectorAll(".pagination-btn.page-num")
+          .forEach((button) => {
+            button.addEventListener("click", () => {
+              currentPage = parseInt(button.dataset.page);
+              renderSections();
+            });
+          });
+
+        document
+          .querySelector(".pagination-btn.previous")
+          .addEventListener("click", () => {
+            if (currentPage > 1) {
+              currentPage--;
+              renderSections();
+            }
+          });
+
+        document
+          .querySelector(".pagination-btn.next")
+          .addEventListener("click", () => {
+            if (currentPage < totalPages) {
+              currentPage++;
+              renderSections();
+            }
+          });
+      }
+      function resetSectionForm() {
+        sectionForm.reset();
+
+        // Clear all error messages
+        const errorMessages = document.querySelectorAll(".error-message");
+        errorMessages.forEach((error) => {
+          error.textContent = "";
+        });
+
+        // Remove error classes from inputs
+        const inputs = sectionForm.querySelectorAll(".form-input");
+        inputs.forEach((input) => {
+          input.classList.remove("error");
+        });
+      }
+      function openAddSectionModal() {
+        modalTitle.textContent = "Ajouter une section";
+        sectionIdInput.value = "";
+        resetSectionForm();
+
+        // Show modal
+        sectionModal.style.display = "block";
+      }
+      function openEditSectionModal(section) {
+        modalTitle.textContent = "Modifier la section"; // Populate form fields
+        sectionIdInput.value = section.id;
+        sectionNameInput.value = section.name || section.nom || "";
+        sectionCodeInput.value = section.code || "";
+        sectionSpecialtyInput.value =
+          section.specialty || section.specialite || "";
+        sectionLevelInput.value = section.level || section.niveau || "";
+        sectionCapacityInput.value = section.capacity || section.capacite || "";
+
+        // Show modal
+        sectionModal.style.display = "block";
+      }
+      function closeModal() {
+        sectionModal.style.display = "none";
+        resetSectionForm();
+      }
+      async function handleFormSubmit(event) {
+        event.preventDefault();
+        console.log("Form submitted", event.target);
+
+        // Validate all inputs
+        const inputs = event.target.querySelectorAll("input, select");
+        let isValid = true;
+
+        inputs.forEach((input) => {
+          if (input.required && !input.value.trim()) {
+            input.classList.add("error");
+            isValid = false;
+          } else {
+            input.classList.remove("error");
+          }
+        });
+
+        if (!isValid) {
+          showNotification(
+            "Veuillez corriger les erreurs dans le formulaire",
+            "error"
+          );
+          return;
+        }
+
+        try {
+          // Validate form fields
+          const nameInput = document.getElementById("section-name");
+          const codeInput = document.getElementById("section-code");
+          const specialtyInput = document.getElementById("section-specialty");
+          const levelInput = document.getElementById("section-level");
+          const capacityInput = document.getElementById("section-capacity");
+          const departmentInput = document.getElementById("section-department");
+
+          if (!nameInput.value.trim()) {
+            showNotification("Le nom de la section est requis", "error");
+            nameInput.focus();
+            return;
+          }
+
+          if (!codeInput.value.trim()) {
+            showNotification("Le code de la section est requis", "error");
+            codeInput.focus();
+            return;
+          }
+
+          if (!specialtyInput.value.trim()) {
+            showNotification("La spécialité est requise", "error");
+            specialtyInput.focus();
+            return;
+          }
+
+          if (!levelInput.value) {
+            showNotification("Le niveau est requis", "error");
+            levelInput.focus();
+            return;
+          }
+
+          if (
+            !capacityInput.value ||
+            isNaN(parseInt(capacityInput.value)) ||
+            parseInt(capacityInput.value) <= 0
+          ) {
+            showNotification(
+              "La capacité doit être un nombre positif",
+              "error"
+            );
+            capacityInput.focus();
+            return;
+          }
+
+          if (!departmentInput.value) {
+            showNotification("Le département est requis", "error");
+            departmentInput.focus();
+            return;
+          }
+
+          // Prepare form data
+          const formData = {
+            name: nameInput.value.trim(),
+            code: codeInput.value.trim().toUpperCase(),
+            specialty: specialtyInput.value.trim(),
+            level: levelInput.value,
+            capacity: parseInt(capacityInput.value),
+            departmentId: parseInt(departmentInput.value),
+          };
+
+          console.log("Submitting section data:", formData);
+
+          const sectionId = document.getElementById("section-id").value;
+          let response;
+
+          if (sectionId) {
+            console.log("Updating section:", sectionId, formData);
+            if (
+              window.sectionAPI &&
+              typeof window.sectionAPI.updateSection === "function"
+            ) {
+              console.log("Using sectionAPI.updateSection");
+              response = await window.sectionAPI.updateSection(
+                sectionId,
+                formData
+              );
+            } else {
+              console.log("Using direct API call for updateSection");
+              response = await apiCall(
+                `sections/${sectionId}`,
+                "PUT",
+                formData
+              );
+            }
+          } else {
+            console.log("Creating new section:", formData);
+            if (
+              window.sectionAPI &&
+              typeof window.sectionAPI.createSection === "function"
+            ) {
+              console.log("Using sectionAPI.createSection");
+              response = await window.sectionAPI.createSection(formData);
+            } else {
+              console.log("Using direct API call for createSection");
+              response = await apiCall("sections", "POST", formData);
+            }
+          }
+
+          if (!response) {
+            throw new Error("Aucune réponse du serveur");
+          }
+
+          if (response.error) {
+            throw new Error(
+              response.error || "Erreur lors de l'enregistrement de la section"
+            );
+          }
+
+          // Close modal and refresh sections list
+          closeModal();
+
+          // Function name is fetchSections, not loadSections
+          await fetchSections();
+          showMessage(
+            sectionId
+              ? "Section modifiée avec succès!"
+              : "Section ajoutée avec succès!",
+            "success"
+          );
+        } catch (error) {
+          console.error("Error saving section:", error);
+          showNotification(
+            error.message ||
+              "Une erreur est survenue lors de l'enregistrement de la section",
+            "error"
+          );
+        }
+      }
+      async function confirmDeleteSection(section) {
+        // Ask for confirmation
+        const confirmDelete = confirm(
+          `Êtes-vous sûr de vouloir supprimer la section "${
+            section.nom || section.name
+          }"? Cette action est irréversible.`
+        );
+
+        if (confirmDelete) {
+          try {
+            // Use enhanced adminAPI if available
+            let success = false;
+            if (window.adminAPI && window.adminAPI.deleteSection) {
+              try {
+                success = await window.adminAPI.deleteSection(section.id);
+              } catch (apiError) {
+                console.error("Error using adminAPI.deleteSection:", apiError);
+                // Continue to fallback
+              }
+            }
+
+            // Fallback to direct API call if adminAPI failed
+            if (!success) {
+              await apiCall(`sections/${section.id}`, "DELETE");
+            }
+
+            // Remove section from array
+            allSections = allSections.filter((s) => s.id !== section.id);
+
+            // Update display
+            filterSections();
+            loadSpecialties();
+
+            showMessage("Section supprimée avec succès!", "success");
+          } catch (error) {
+            console.error("Error deleting section:", error);
+            showMessage(
+              `Erreur lors de la suppression de la section: ${error.message}`,
+              "error"
+            );
+          }
+        }
+      }
+
+      // Teacher Assignment Functions
+      async function openTeacherAssignmentModal(section) {
+        const modal = document.getElementById("teacher-assignment-modal");
+        const sectionInfo = document.getElementById("assignment-section-info");
+        const sectionIdInput = document.getElementById("assignment-section-id");
+        const teacherSelect = document.getElementById("teacher-select");
+        const currentAssignments = document.getElementById(
+          "current-assignments"
+        );
+
+        // Set section information
+        sectionIdInput.value = section.id;
+        sectionInfo.innerHTML = `
+          <strong>${
+            section.name || section.nom || "Section sans nom"
+          }</strong><br>
+          <small>Code: ${section.code || "N/A"} | Niveau: ${
+          section.level || section.niveau || "N/A"
+        } | Spécialité: ${
+          section.specialty || section.specialite || "Non spécifiée"
+        }</small>
+        `;
+
+        // Load teachers and current assignments
+        await Promise.all([
+          loadTeachersForAssignment(),
+          loadCurrentAssignments(section.id),
+        ]);
+
+        // Reset role selection and hide group container
+        const roleSelect = document.getElementById("teacher-role");
+        const groupContainer = document.getElementById(
+          "group-selection-container"
+        );
+        const groupSelect = document.getElementById("group-select");
+
+        if (roleSelect) {
+          roleSelect.value = "";
+        }
+
+        if (groupContainer) {
+          groupContainer.style.display = "none";
+        }
+
+        if (groupSelect) {
+          groupSelect.value = "";
+          groupSelect.required = false;
+          // Clear all options except the first
+          while (groupSelect.options.length > 1) {
+            groupSelect.remove(1);
+          }
+        }
+
+        // Show modal
+        modal.style.display = "block";
+      }
+
+      async function loadTeachersForAssignment() {
+        const teacherSelect = document.getElementById("teacher-select");
+
+        try {
+          // Clear previous options except the first one
+          while (teacherSelect.options.length > 1) {
+            teacherSelect.remove(1);
+          }
+
+          // Use admin API to get teachers
+          const teachers =
+            (await window.adminAPI?.getTeachers?.()) ||
+            (await apiCall("enseignants", "GET"));
+
+          if (Array.isArray(teachers)) {
+            teachers.forEach((teacher) => {
+              const option = document.createElement("option");
+              option.value = teacher.id;
+              option.textContent = `${
+                teacher.firstName || teacher.prenom || ""
+              } ${teacher.lastName || teacher.nom || ""}`.trim();
+              teacherSelect.appendChild(option);
+            });
+          }
+        } catch (error) {
+          console.error("Error loading teachers:", error);
+          showMessage("Erreur lors du chargement des responsables", "error");
+        }
+      }
+      async function loadCurrentAssignments(sectionId) {
+        const currentAssignments = document.getElementById(
+          "current-assignments"
+        );
+
+        if (!currentAssignments) {
+          console.warn("Current assignments container not found");
+          return;
+        }
+
+        try {
+          console.log(`Fetching responsables for section: ${sectionId}`);
+
+          // Show loading state
+          currentAssignments.innerHTML =
+            '<div class="loading">Chargement des assignations...</div>';
+
+          // Use direct fetch to ensure we get the raw response
+          const token =
+            localStorage.getItem("admin_token") ||
+            sessionStorage.getItem("admin_token");
+
+          const response = await fetch(
+            `https://unicersityback-production-1fbe.up.railway.app/api/sections/${sectionId}/responsables`,
+            {
+              headers: {
+                Authorization: token ? `Bearer ${token}` : "",
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("API response for assignments:", data);
+
+          // Enhanced process response to handle even more different response formats
+          let assignments = [];
+          if (data) {
+            if (Array.isArray(data)) {
+              assignments = data;
+            } else if (data.data && Array.isArray(data.data)) {
+              assignments = data.data;
+            } else if (data.responsables && Array.isArray(data.responsables)) {
+              assignments = data.responsables;
+            } else if (data.results && Array.isArray(data.results)) {
+              assignments = data.results;
+            } else if (typeof data === "object") {
+              // Check if this object has nested assignments
+              const possibleArrays = Object.values(data).filter((val) =>
+                Array.isArray(val)
+              );
+              if (possibleArrays.length > 0) {
+                // Use the first array found in the object
+                assignments = possibleArrays[0];
+              } else {
+                assignments = [data]; // Handle single object response
+              }
+            }
+          }
+
+          console.log(
+            `Processing ${assignments ? assignments.length : 0} assignments`
+          );
+
+          if (Array.isArray(assignments) && assignments.length > 0) {
+            // Group assignments by role
+            const groupedAssignments = {
+              filiere: assignments.filter((a) => a.role === "filiere"),
+              section: assignments.filter((a) => a.role === "section"),
+              td: assignments.filter((a) => a.role === "td"),
+              tp: assignments.filter((a) => a.role === "tp"),
+            };
+
+            let html = '<div class="assignments-container">';
+
+            // Display each role group
+            Object.entries(groupedAssignments).forEach(
+              ([role, roleAssignments]) => {
+                if (roleAssignments.length > 0) {
+                  html += `<div class="role-assignments">
+                  <h4>${getRoleDisplayName(role)}</h4>
+                  <ul>`;
+                  roleAssignments.forEach((assignment) => {
+                    console.log("Processing assignment:", assignment);
+
+                    // Get teacher info from assignment with improved fallbacks
+                    let teacherName = "";
+
+                    // Case 1: Teacher info in enseignant object
+                    if (assignment.enseignant) {
+                      const firstName =
+                        assignment.enseignant.firstName ||
+                        assignment.enseignant.prenom ||
+                        "";
+                      const lastName =
+                        assignment.enseignant.lastName ||
+                        assignment.enseignant.nom ||
+                        "";
+                      teacherName = `${firstName} ${lastName}`.trim();
+                    }
+                    // Case 2: Teacher info directly in the assignment
+                    else if (
+                      assignment.firstName ||
+                      assignment.lastName ||
+                      assignment.prenom ||
+                      assignment.nom
+                    ) {
+                      const firstName =
+                        assignment.firstName || assignment.prenom || "";
+                      const lastName =
+                        assignment.lastName || assignment.nom || "";
+                      teacherName = `${firstName} ${lastName}`.trim();
+                    }
+                    // Case 3: Teacher name as a single field
+                    else if (
+                      assignment.name ||
+                      assignment.teacherName ||
+                      assignment.enseignantName
+                    ) {
+                      teacherName =
+                        assignment.name ||
+                        assignment.teacherName ||
+                        assignment.enseignantName;
+                    }
+                    // Case 4: Teacher ID only (use placeholder)
+                    else if (assignment.enseignantId) {
+                      teacherName = `Enseignant #${assignment.enseignantId}`;
+                    }
+
+                    // Only continue processing if we have a teacher in some form
+                    if (teacherName || assignment.enseignantId) {
+                      // Enhanced group handling with more fallbacks
+                      let groupInfo = "";
+
+                      // Case 1: Group as an object
+                      if (assignment.group) {
+                        const groupName =
+                          assignment.group.name ||
+                          assignment.group.nom ||
+                          (typeof assignment.group === "string"
+                            ? assignment.group
+                            : "");
+                        if (groupName) {
+                          groupInfo = ` - Groupe: ${groupName}`;
+                        }
+                      }
+                      // Case 2: Group as separate ID/Name properties
+                      else if (assignment.groupId || assignment.groupName) {
+                        groupInfo = ` - Groupe: ${
+                          assignment.groupName || assignment.groupId
+                        }`;
+                      }
+                      // Case 3: TD/TP groups in specific properties
+                      else if (
+                        (role === "td" && assignment.tdGroupe) ||
+                        (role === "tp" && assignment.tpGroupe)
+                      ) {
+                        const groupe =
+                          role === "td"
+                            ? assignment.tdGroupe
+                            : assignment.tpGroupe;
+                        const groupName =
+                          typeof groupe === "object"
+                            ? groupe.name || groupe.nom
+                            : groupe;
+                        if (groupName) {
+                          groupInfo = ` - Groupe: ${groupName}`;
+                        }
+                      }
+                      html += `
+                      <li class="assignment-item">
+                        <div class="assignment-info">
+                          <span class="assignment-teacher">${teacherName}${groupInfo}</span>
+                        </div>
+                        <button class="remove-assignment-btn" onclick="removeAssignment('${sectionId}', '${
+                        assignment.id || assignment.enseignantId || ""
+                      }')">
+                          <span class="material-icons">close</span>
+                        </button>
+                      </li>`;
+                    }
+                  });
+
+                  html += "</ul></div>";
+                }
+              }
+            );
+
+            html += "</div>";
+
+            // Check if we actually found any valid assignments to display
+            if (html === '<div class="assignments-container"></div>') {
+              console.log("No valid assignments to display");
+              currentAssignments.innerHTML =
+                '<p class="no-assignments">Aucun responsable assigné</p>';
+            } else {
+              currentAssignments.innerHTML = html;
+            }
+          } else {
+            console.log("No assignments found for section");
+            currentAssignments.innerHTML =
+              '<p class="no-assignments">Aucun responsable assigné</p>';
+          }
+        } catch (error) {
+          console.error("Error loading current assignments:", error);
+          currentAssignments.innerHTML =
+            '<p class="error">Erreur lors du chargement des assignations: ' +
+            (error.message || "Unknown error") +
+            "</p>";
+        }
+      }
+
+      function getRoleDisplayName(role) {
+        const roleNames = {
+          filiere: "Responsable de Filière",
+          section: "Responsable de Section",
+          td: "Responsable TD",
+          tp: "Responsable TP",
+          // Legacy role mappings for backward compatibility
+          CHEF_DEPARTEMENT: "Chef de Département",
+          RESPONSABLE_SECTION: "Responsable de Section",
+          RESPONSABLE_MODULE: "Responsable de Module",
+          RESPONSABLE_TD: "Responsable TD",
+          RESPONSABLE_TP: "Responsable TP",
+          ENSEIGNANT: "Enseignant",
+        };
+        return roleNames[role] || role;
+      }
+      async function handleTeacherAssignment(event) {
+        event.preventDefault();
+
+        // Prevent multiple submissions
+        const submitBtn = document.getElementById(
+          "save-teacher-assignment-btn"
+        );
+        if (submitBtn.disabled) {
+          return;
+        }
+
+        const sectionId = document.getElementById(
+          "assignment-section-id"
+        ).value;
+        const teacherSelect = document.getElementById("teacher-select");
+        const teacherId = teacherSelect.value;
+        const role = document.getElementById("teacher-role").value;
+        const groupSelect = document.getElementById("group-select");
+        const groupId = groupSelect.value;
+
+        console.log(
+          `Assignment request - Section: ${sectionId}, Teacher: ${teacherId}, Role: ${role}, Group: ${groupId}`
+        );
+
+        // Validate inputs
+        if (!teacherId || !role) {
+          console.error("Missing required teacher or role input");
+          showNotification(
+            "Veuillez sélectionner un responsable et un rôle",
+            "error"
+          );
+          return;
+        }
+
+        // Check if group is required for TD/TP roles
+        if ((role === "td" || role === "tp") && !groupId) {
+          console.error("Missing required group for TD/TP role");
+          showNotification(
+            "Veuillez sélectionner un groupe pour ce rôle",
+            "error"
+          );
+          return;
+        }
+
+        // Get selected teacher name for better feedback
+        const selectedTeacherOption =
+          teacherSelect.options[teacherSelect.selectedIndex];
+        const teacherName = selectedTeacherOption
+          ? selectedTeacherOption.textContent
+          : "Unknown";
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Assignation...';
+
+        try {
+          // Validate API configuration
+          if (!API_BASE_URL) {
+            throw new Error(
+              "Configuration manquante: API_BASE_URL non définie"
+            );
+          }
+          if (!authToken) {
+            throw new Error("Token d'authentification manquant");
+          }
+
+          const assignmentData = {
+            enseignantId: parseInt(teacherId),
+            role: role,
+          }; // Enhanced group assignment for TD/TP roles with better error handling
+          if (groupId && (role === "td" || role === "tp")) {
+            if (groupId.startsWith("default_")) {
+              // Extract the group name from the default value
+              let groupName;
+              if (groupId === `default_${role}_new`) {
+                // This is a "create new" option - generate a unique name
+                const timestamp = new Date().getTime() % 10000; // Use timestamp for uniqueness
+                groupName = `${role.toUpperCase()}-${timestamp}`;
+              } else {
+                // Standard default group
+                groupName = groupId.replace("default_", "").toUpperCase();
+              }
+
+              const groupType = role.toUpperCase();
+              console.log(
+                `Creating new group: ${groupName} of type ${groupType}`
+              );
+
+              try {
+                // First try the standard API endpoint
+                let newGroup;
+                try {
+                  newGroup = await apiCall(
+                    `sections/${sectionId}/groupes`,
+                    "POST",
+                    {
+                      name: groupName,
+                      type: groupType,
+                      capacity: role === "td" ? 30 : 15,
+                    }
+                  );
+                } catch (firstError) {
+                  console.warn(
+                    "Failed with first API endpoint, trying alternate:",
+                    firstError
+                  );
+                  // Try alternate API endpoint
+                  newGroup = await apiCall(
+                    `sections/${sectionId}/groups`,
+                    "POST",
+                    {
+                      name: groupName,
+                      type: groupType,
+                      capacity: role === "td" ? 30 : 15,
+                    }
+                  );
+                }
+
+                if (newGroup && newGroup.id) {
+                  assignmentData.groupId = newGroup.id;
+                  console.log(
+                    `Successfully created group with ID: ${newGroup.id}`
+                  );
+                } else {
+                  // No valid ID but creation didn't error
+                  console.warn(
+                    "Group created but no ID returned, using name as fallback"
+                  );
+                  assignmentData.groupName = groupName;
+                }
+              } catch (groupError) {
+                console.warn(
+                  "Could not create group, using group name as fallback:",
+                  groupError
+                );
+                assignmentData.groupName = groupName;
+                // Also include type for better identification
+                assignmentData.groupType = groupType;
+              }
+            } else {
+              // Use existing group ID
+              try {
+                assignmentData.groupId = parseInt(groupId);
+              } catch (parseError) {
+                // If parsing fails, use the original string
+                assignmentData.groupId = groupId;
+              }
+            }
+          }
+
+          // Make the API call with better error handling
+          console.log("Making API call with data:", assignmentData);
+
+          const response = await fetch(
+            `${API_BASE_URL}/sections/${sectionId}/responsables`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify(assignmentData),
+            }
+          );
+
+          console.log("API response status:", response.status);
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("API error response:", errorData);
+            throw new Error(
+              errorData.message ||
+                `HTTP ${response.status}: ${response.statusText}`
+            );
+          }
+
+          const result = await response.json();
+          console.log("Assignment successful:", result);
+
+          // Show success message first
+          showNotification(
+            `${teacherName} assigné comme ${getRoleDisplayName(
+              role
+            )} avec succès`,
+            "success"
+          );
+
+          // Reload the specific section's teachers
+          await loadSectionTeachers(sectionId);
+
+          // Reload current assignments in the modal
+          await loadCurrentAssignments(sectionId);
+
+          // Reset form
+          document.getElementById("teacher-role").value = "";
+          document.getElementById("teacher-select").value = "";
+          document.getElementById("group-select").value = "";
+          document.getElementById("group-selection-container").style.display =
+            "none";
+
+          // Close modal after a short delay to allow user to see the success
+          setTimeout(() => {
+            const modal = document.getElementById("teacher-assignment-modal");
+            if (modal) {
+              modal.style.display = "none";
+            }
+          }, 1500);
+        } catch (error) {
+          console.error("Error assigning teacher:", error);
+          let errorMessage = "Erreur lors de l'assignation du responsable";
+
+          if (error.message) {
+            if (
+              error.message.includes("already assigned") ||
+              error.message.includes("déjà assigné")
+            ) {
+              errorMessage =
+                "Ce responsable est déjà assigné à ce rôle pour cette section";
+            } else if (
+              error.message.includes("not found") ||
+              error.message.includes("introuvable")
+            ) {
+              errorMessage = "Responsable ou section introuvable";
+            } else if (
+              error.message.includes("validation") ||
+              error.message.includes("invalid")
+            ) {
+              errorMessage = "Données d'assignation invalides";
+            } else {
+              errorMessage = `Erreur: ${error.message}`;
+            }
+          }
+
+          showNotification(errorMessage, "error");
+        } finally {
+          // Reset button state
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "Assigner";
+        }
+      }
+
+      async function removeAssignment(sectionId, assignmentId) {
+        if (!confirm("Êtes-vous sûr de vouloir retirer cette assignation ?")) {
+          return;
+        }
+
+        try {
+          await apiCall(
+            `sections/${sectionId}/responsables/${assignmentId}`,
+            "DELETE"
+          );
+          showNotification("Assignation retirée avec succès", "success");
+          await loadCurrentAssignments(sectionId);
+        } catch (error) {
+          console.error("Error removing assignment:", error);
+          showNotification(
+            "Erreur lors de la suppression de l'assignation",
+            "error"
+          );
+        }
+      }
+
+      function handleRoleSelectionChange() {
+        const roleSelect = document.getElementById("teacher-role");
+        const groupContainer = document.getElementById(
+          "group-selection-container"
+        );
+        const groupSelect = document.getElementById("group-select");
+
+        if (!roleSelect || !groupContainer || !groupSelect) {
+          console.error("Required elements not found for role selection");
+          return;
+        }
+
+        const selectedRole = roleSelect.value;
+        console.log("Role changed to:", selectedRole);
+
+        // Show group selection for TD/TP roles
+        if (selectedRole === "td" || selectedRole === "tp") {
+          console.log("Showing group selection for", selectedRole);
+          groupContainer.style.display = "block";
+          groupSelect.required = true;
+
+          // Add visual feedback
+          groupContainer.style.animation = "fadeIn 0.3s ease-in";
+          groupSelect.style.border = "2px solid #007bff";
+          setTimeout(() => {
+            groupSelect.style.border = "1px solid #ced4da";
+          }, 2000);
+
+          // Load groups for the current section
+          const sectionId = document.getElementById(
+            "assignment-section-id"
+          ).value;
+          if (sectionId) {
+            loadGroupsForSection(sectionId, selectedRole);
+          } else {
+            console.warn("No section ID found for loading groups");
+          }
+        } else {
+          console.log("Hiding group selection");
+          groupContainer.style.display = "none";
+          groupSelect.required = false;
+          groupSelect.value = "";
+          // Clear group selection
+          while (groupSelect.options.length > 1) {
+            groupSelect.remove(1);
+          }
+        }
+      }
+      async function loadGroupsForSection(sectionId, roleType) {
+        const groupSelect = document.getElementById("group-select");
+        if (!groupSelect) return;
+
+        try {
+          // Clear existing options except the first one
+          while (groupSelect.options.length > 1) {
+            groupSelect.remove(1);
+          }
+
+          // Fetch groups for the section
+          const response = await fetch(
+            `${API_BASE_URL}/sections/${sectionId}/groupes`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to load groups");
+          }
+
+          const groups = await response.json();
+
+          // Filter groups by type if needed
+          const filteredGroups = roleType
+            ? groups.filter((group) => group.type === roleType)
+            : groups;
+
+          if (filteredGroups && filteredGroups.length > 0) {
+            filteredGroups.forEach((group) => {
+              const option = document.createElement("option");
+              option.value = group.id;
+              option.textContent = `Groupe ${group.type.toUpperCase()} ${
+                group.name
+              }`;
+              groupSelect.appendChild(option);
+            });
+          } else {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = `Aucun groupe ${roleType.toUpperCase()} disponible`;
+            option.disabled = true;
+            groupSelect.appendChild(option);
+          }
+        } catch (error) {
+          console.error("Error loading groups:", error);
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "Erreur de chargement des groupes";
+          option.disabled = true;
+          groupSelect.appendChild(option);
+        }
+      }
+
+      // Auto-generate section code function
+      function generateSectionCode() {
+        const specialty = document
+          .getElementById("section-specialty")
+          .value.trim();
+        const level = document.getElementById("section-level").value.trim();
+        const name = document.getElementById("section-name").value.trim();
+        const codeInput = document.getElementById("section-code");
+
+        if (specialty && level && name) {
+          // Take first 3 letters of specialty (or pad with zeros if less than 3)
+          let specialtyCode = specialty.substring(0, 3).toUpperCase();
+          if (specialtyCode.length < 3) {
+            specialtyCode = specialtyCode.padEnd(3, "0");
+          }
+
+          // Use level as-is
+          const levelCode = level.toUpperCase();
+
+          // Take first letter of name
+          const nameCode = name.substring(0, 1).toUpperCase();
+
+          // Generate code in format: ACA-L-A
+          const generatedCode = `${specialtyCode}-${levelCode}-${nameCode}`;
+          codeInput.value = generatedCode;
+        } else {
+          codeInput.value = "";
+        }
+      }
+
+      // Form validation and error handling
+      document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("section-form");
+        const inputs = form.querySelectorAll("input, select"); // Add input validation
+        inputs.forEach((input) => {
+          input.addEventListener("input", function () {
+            validateInput(this);
+          });
+
+          input.addEventListener("blur", function () {
+            validateInput(this);
+          });
+        });
+
+        // Add auto-generation event listeners for specific fields
+        const specialtyInput = document.getElementById("section-specialty");
+        const levelInput = document.getElementById("section-level");
+        const nameInput = document.getElementById("section-name");
+        [specialtyInput, levelInput, nameInput].forEach((input) => {
+          if (input) {
+            input.addEventListener("input", generateSectionCode);
+            input.addEventListener("change", generateSectionCode);
+          }
+        });
+      });
+      function validateInput(input) {
+        const errorElement = document.getElementById(`${input.id}-error`);
+        let isValid = true;
+        let errorMessage = "";
+
+        // Skip validation for readonly fields
+        if (input.readOnly) {
+          // Clear any existing error
+          input.classList.remove("error");
+          if (errorElement) {
+            errorElement.textContent = "";
+            errorElement.style.display = "none";
+          }
+          return true;
+        }
+
+        // Required field validation
+        if (input.required && !input.value.trim()) {
+          isValid = false;
+          errorMessage = "Ce champ est requis";
+        }
+
+        // Pattern validation
+        if (
+          isValid &&
+          input.pattern &&
+          !new RegExp(input.pattern).test(input.value)
+        ) {
+          isValid = false;
+          errorMessage = input.title || "Format invalide";
+        } // Min/max length validation (only for text inputs)
+        if (
+          isValid &&
+          input.type !== "number" &&
+          input.minLength &&
+          input.value.length < input.minLength
+        ) {
+          isValid = false;
+          errorMessage = `Minimum ${input.minLength} caractères`;
+        }
+        if (
+          isValid &&
+          input.type !== "number" &&
+          input.maxLength &&
+          input.maxLength > 0 &&
+          input.value.length > input.maxLength
+        ) {
+          isValid = false;
+          errorMessage = `Maximum ${input.maxLength} caractères`;
+        }
+
+        // Min/max value validation for number inputs
+        if (isValid && input.type === "number") {
+          const value = parseInt(input.value);
+          if (input.min && value < parseInt(input.min)) {
+            isValid = false;
+            errorMessage = `La valeur minimale est ${input.min}`;
+          }
+          if (input.max && value > parseInt(input.max)) {
+            isValid = false;
+            errorMessage = `La valeur maximale est ${input.max}`;
+          }
+        }
+
+        // Update UI
+        input.classList.toggle("error", !isValid);
+        if (errorElement) {
+          errorElement.textContent = errorMessage;
+          errorElement.style.display = isValid ? "none" : "block";
+        }
+
+        return isValid;
+      }
+
+      // Create a base notification function that doesn't depend on other notification functions
+      function createNotification(message, type = "info") {
+        // Remove any existing notifications first
+        const existingNotifications =
+          document.querySelectorAll(".notification");
+        existingNotifications.forEach((notification) => notification.remove());
+
+        // Create new notification
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+
+        // Add to document
+        document.body.appendChild(notification);
+
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+          }
+        }, 3000);
+      }
+
+      // Update showNotification to use the base function
+      function showNotification(message, type = "info") {
+        createNotification(message, type);
+      }
+
+      // Update showMessage to use the base function
+      function showMessage(message, type = "info") {
+        createNotification(message, type);
+      }
+
+      // Function to update admin info in the sidebar
+      function updateSidebarAdminInfo() {
+        const adminName = document.getElementById("admin-name");
+        const adminRole = document.getElementById("admin-role");
+        const adminAvatar = document.getElementById("admin-avatar");
+
+        // Get admin data from session/local storage
+        const adminEmail =
+          sessionStorage.getItem("admin_email") ||
+          localStorage.getItem("admin_email");
+        const adminRoleValue =
+          sessionStorage.getItem("admin_role") ||
+          localStorage.getItem("admin_role");
+
+        // Extract name from email (e.g., sophie.williams@example.com -> Sophie Williams)
+        let displayName = "Admin";
+        if (adminEmail) {
+          const emailPrefix = adminEmail.split("@")[0];
+          // Convert email prefix to display name (sophie.williams -> Sophie Williams)
+          displayName = emailPrefix
+            .split(".")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
+        }
+
+        // Map role values to display names
+        const roleDisplayNames = {
+          doyen: "Doyen",
+          "vice-doyen": "Vice-Doyen",
+          "chef-de-departement": "Chef de Département",
+          "chef-de-specialite": "Chef de Spécialité",
+          secretaire: "Secrétaire",
+        };
+
+        const displayRole =
+          roleDisplayNames[adminRoleValue] ||
+          adminRoleValue ||
+          "Administrateur";
+
+        // Update the elements
+        if (adminName) {
+          adminName.textContent = displayName;
+        }
+        if (adminRole) {
+          adminRole.textContent = displayRole;
+        }
+        if (adminAvatar) {
+          adminAvatar.textContent = displayName.charAt(0).toUpperCase();
+        }
+
+        // Also try to get from admin_data for backward compatibility
+        const adminData = JSON.parse(
+          sessionStorage.getItem("admin_data") ||
+            localStorage.getItem("admin_data") ||
+            "{}"
+        );
+
+        if (adminData.name && adminName) {
+          adminName.textContent = adminData.name;
+        }
+        if (adminData.role && adminRole) {
+          adminRole.textContent = adminData.role;
+        }
+        if (adminData.name && adminAvatar) {
+          adminAvatar.textContent = adminData.name.charAt(0).toUpperCase();
+        }
+      }
+
+      // Function to set active menu item in sidebar
+      function setSidebarActiveMenuItem() {
+        const currentPath = window.location.pathname;
+        const navItems = document.querySelectorAll(".nav-item");
+
+        navItems.forEach((item) => {
+          if (item.getAttribute("href") === currentPath.split("/").pop()) {
+            item.classList.add("active");
+          } else {
+            item.classList.remove("active");
+          }
+        });
+      }
+
+      // Add this to your existing JavaScript
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize timetable management
+        initializeTimetableManagement();
+      });
+
+      function initializeTimetableManagement() {
+        // Remove any existing event listeners first
+        document.removeEventListener("click", handleTimetableButtonClick);
+
+        // Add click handler for timetable buttons
+        document.addEventListener("click", handleTimetableButtonClick);
+
+        // Tab switching
+        const tabButtons = document.querySelectorAll(
+          ".timetable-tabs .tab-btn"
+        );
+        tabButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const tabId = button.dataset.tab;
+            switchTimetableTab(tabId);
+          });
+        });
+
+        // Close button for timetable management modal
+        const closeTimetableManagementModal = document.getElementById(
+          "close-timetable-management-modal"
+        );
+        if (closeTimetableManagementModal) {
+          console.log("Setting up close button for timetable management modal");
+          closeTimetableManagementModal.addEventListener("click", function () {
+            const modal = document.getElementById("timetable-management-modal");
+            if (modal) {
+              console.log("Closing timetable management modal");
+              modal.style.display = "none";
+            }
+          });
+        }
+
+        // Close modal when clicking outside
+        const timetableManagementModal = document.getElementById(
+          "timetable-management-modal"
+        );
+        if (timetableManagementModal) {
+          console.log(
+            "Setting up click outside for timetable management modal"
+          );
+          window.addEventListener("click", function (event) {
+            if (event.target === timetableManagementModal) {
+              console.log(
+                "Clicked outside, closing timetable management modal"
+              );
+              timetableManagementModal.style.display = "none";
+            }
+          });
+        }
+
+        // Upload buttons
+        const uploadRegularBtn = document.getElementById(
+          "upload-regular-timetable"
+        );
+        const uploadExamBtn = document.getElementById("upload-exam-timetable");
+
+        if (uploadRegularBtn) {
+          uploadRegularBtn.addEventListener("click", () =>
+            openTimetableUploadModal("regular")
+          );
+        }
+        if (uploadExamBtn) {
+          uploadExamBtn.addEventListener("click", () =>
+            openTimetableUploadModal("exam")
+          );
+        }
+      }
+
+      // Separate click handler function
+      function handleTimetableButtonClick(e) {
+        const timetableBtn = e.target.closest(".timetable-btn");
+        if (timetableBtn) {
+          const sectionId = timetableBtn.dataset.id;
+          if (sectionId) {
+            // Check if modal is already open
+            const modal = document.getElementById("timetable-management-modal");
+            if (modal && modal.style.display === "block") {
+              console.log("Modal is already open, not reopening");
+              return;
+            }
+            openTimetableManagement(sectionId);
+          }
+        }
+      }
+
+      function openTimetableManagement(sectionId) {
+        console.log("=== OPENING TIMETABLE MANAGEMENT ===");
+        console.log("Section ID:", sectionId);
+
+        const modal = document.getElementById("timetable-management-modal");
+        console.log("Found modal:", modal);
+
+        if (!modal) {
+          console.error("Modal element not found!");
+          return;
+        }
+
+        // Check if modal is already open
+        if (modal.style.display === "block") {
+          console.log("Modal is already open, not reopening");
+          return;
+        }
+
+        const titleElement = document.getElementById(
+          "timetable-management-title"
+        );
+        console.log("Found title element:", titleElement);
+
+        if (!titleElement) {
+          console.error("Title element not found!");
+          return;
+        }
+
+        // Find the section in the sections array
+        const section = allSections.find((s) => s.id === sectionId);
+        console.log("Found section:", section);
+
+        if (!section) {
+          console.error("Section not found in sections array!");
+          return;
+        }
+
+        // Update the modal title
+        titleElement.textContent = `Gestion des Emplois du Temps - ${
+          section.name || section.nom || "Section"
+        }`;
+
+        // Store the section ID in the modal for later use
+        modal.dataset.sectionId = sectionId;
+
+        // Clear existing timetables before loading new ones
+        const regularContainer = document.getElementById(
+          "mgmt-regular-timetables-list"
+        );
+        const examContainer = document.getElementById(
+          "mgmt-exam-timetables-list"
+        );
+        if (regularContainer)
+          regularContainer.innerHTML =
+            '<div class="loading-timetables">Chargement des emplois du temps...</div>';
+        if (examContainer)
+          examContainer.innerHTML =
+            '<div class="loading-timetables">Chargement des emplois des examens...</div>';
+
+        // Setup upload form handlers
+        setupUploadForms(sectionId);
+
+        // Setup tab switchers in this modal
+        setupTimetableTabs();
+
+        // Show the modal
+        modal.style.display = "block";
+        console.log("Modal displayed");
+
+        // Instead of auto-loading, show an empty state with a load button
+        if (regularContainer) {
+          regularContainer.innerHTML = `
+            <div class="no-timetables">
+              <p>Aucun emploi du temps chargé</p>
+              <button class="btn btn-primary mt-4" onclick="loadTimetables('${sectionId}', 'regular')">
+                <span class="material-icons">refresh</span>
+                Charger les emplois du temps
+              </button>
+            </div>`;
+        }
+
+        console.log("=== FINISHED OPENING TIMETABLE MANAGEMENT ===");
+      }
+
+      // Function to set up tab switching in the timetable modal
+      function setupTimetableTabs() {
+        console.log("Setting up timetable tabs");
+        const tabButtons = document.querySelectorAll(
+          ".timetable-tabs .tab-btn"
+        );
+
+        // First, remove any existing event listeners by cloning and replacing
+        tabButtons.forEach((btn) => {
+          const newBtn = btn.cloneNode(true);
+          if (btn.parentNode) {
+            btn.parentNode.replaceChild(newBtn, btn);
+          }
+        });
+
+        // Get the fresh elements
+        const freshTabButtons = document.querySelectorAll(
+          ".timetable-tabs .tab-btn"
+        );
+
+        // Add new event listeners
+        freshTabButtons.forEach((button) => {
+          console.log(
+            "Adding event listener to tab button:",
+            button.dataset.tab
+          );
+          button.addEventListener("click", () => {
+            const tabId = button.dataset.tab;
+            console.log("Tab button clicked:", tabId);
+            switchTimetableTab(tabId);
+          });
+        });
+
+        // Make sure first tab is active by default
+        if (freshTabButtons.length > 0) {
+          const firstTabId = freshTabButtons[0].dataset.tab;
+          console.log("Activating first tab:", firstTabId);
+          switchTimetableTab(firstTabId);
+        }
+      }
+
+      function switchTimetableTab(tabId) {
+        console.log("Switching to tab:", tabId);
+
+        // Update active tab button
+        const tabButtons = document.querySelectorAll(
+          ".timetable-tabs .tab-btn"
+        );
+        tabButtons.forEach((btn) => {
+          const isActive = btn.dataset.tab === tabId;
+          btn.classList.toggle("active", isActive);
+          console.log(
+            `Tab button ${btn.dataset.tab}: ${isActive ? "active" : "inactive"}`
+          );
+        });
+
+        // Update active content
+        const tabContents = document.querySelectorAll(".tab-content");
+        tabContents.forEach((content) => {
+          const isActive = content.id === `${tabId}-content`;
+          content.classList.toggle("active", isActive);
+          console.log(
+            `Tab content ${content.id}: ${isActive ? "active" : "inactive"}`
+          );
+
+          // Fix visibility with inline style as well
+          content.style.display = isActive ? "block" : "none";
+        });
+      }
+
+      // Setup upload form handlers for integrated forms
+      function setupUploadForms(sectionId) {
+        // Regular timetable upload form
+        const regularForm = document.getElementById("regular-upload-form");
+        const examForm = document.getElementById("exam-upload-form");
+
+        if (regularForm) {
+          // Remove existing event listeners by cloning
+          const newRegularForm = regularForm.cloneNode(true);
+          regularForm.parentNode.replaceChild(newRegularForm, regularForm);
+
+          // Add new event listener
+          newRegularForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await handleIntegratedUpload(sectionId, "regular", newRegularForm);
+          });
+        }
+
+        if (examForm) {
+          // Remove existing event listeners by cloning
+          const newExamForm = examForm.cloneNode(true);
+          examForm.parentNode.replaceChild(newExamForm, examForm);
+
+          // Add new event listener
+          newExamForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await handleIntegratedUpload(sectionId, "exam", newExamForm);
+          });
+        }
+      }
+
+      // Handle integrated upload from the modal forms
+      async function handleIntegratedUpload(sectionId, type, form) {
+        try {
+          const formData = new FormData();
+
+          // Get form values
+          const title = form.querySelector(`#${type}-title`).value;
+          const description = form.querySelector(`#${type}-description`).value;
+          const file = form.querySelector(`#${type}-file`).files[0];
+
+          // Validate required fields
+          if (!title || !file) {
+            showNotification(
+              "Veuillez remplir tous les champs obligatoires",
+              "error"
+            );
+            return;
+          }
+
+          // Show loading state
+          const submitBtn = form.querySelector('button[type="submit"]');
+          const originalText = submitBtn.innerHTML;
+          submitBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Téléchargement...';
+          submitBtn.disabled = true;
+
+          // Prepare form data
+          formData.append("title", title);
+          formData.append("scheduleType", type);
+          formData.append("document", file);
+          if (description) {
+            formData.append("description", description);
+          }
+
+          console.log(`Uploading ${type} timetable:`, {
+            title,
+            description,
+            fileName: file.name,
+          });
+
+          // Upload to API
+          const response = await fetch(
+            `${API_BASE_URL}/sections/schedules/${sectionId}/upload`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: formData,
+            }
+          );
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Erreur lors du téléchargement");
+          }
+
+          // Success
+          showNotification("Emploi du temps téléchargé avec succès", "success");
+          form.reset();
+
+          // Reload the specific timetable list
+          await loadTimetables(sectionId, type);
+        } catch (error) {
+          console.error("Error uploading timetable:", error);
+          showNotification(`Erreur: ${error.message}`, "error");
+        } finally {
+          // Reset button state
+          const submitBtn = form.querySelector('button[type="submit"]');
+          if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-upload"></i> Télécharger';
+            submitBtn.disabled = false;
+          }
+        }
+      }
+
+      async function loadTimetables(sectionId, type = "regular") {
+        console.log(`=== STARTING LOAD TIMETABLES ===`);
+        console.log("Function called with:", { sectionId });
+
+        // Check if API_BASE_URL is defined
+        if (!API_BASE_URL) {
+          console.error("API_BASE_URL is not defined!");
+          showNotification("Configuration error: API URL not defined", "error");
+          return;
+        }
+
+        // Check if authToken is defined
+        if (!authToken) {
+          console.error("authToken is not defined!");
+          showNotification("Authentication error: No token found", "error");
+          return;
+        }
+
+        // Determine which modal is active and set the correct container ID
+        const mgmtModal = document.getElementById("timetable-management-modal");
+        const isMgmtModal = mgmtModal && mgmtModal.style.display === "block";
+        const containerId = isMgmtModal
+          ? "mgmt-regular-timetables-list"
+          : "regular-timetables-list";
+        console.log(`Using container ID: ${containerId} for timetables`);
+
+        const container = document.getElementById(containerId);
+        if (!container) {
+          console.error(`Container for timetables not found`);
+          return;
+        }
+
+        // Show loading state
+        container.innerHTML = `
+          <div class="loading-timetables">
+            <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p>Chargement des emplois du temps...</p>
+          </div>
+        `;
+
+        try {
+          // Try both possible API endpoints
+          let response;
+          let timetables;
+          let error = null;
+
+          // First try the schedules endpoint
+          try {
+            const url = `${API_BASE_URL}/sections/${sectionId}/schedules?type=regular`;
+            console.log("Trying first endpoint:", url);
+
+            response = await fetch(url, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              credentials: "include",
+            });
+
+            console.log("First endpoint response status:", response.status);
+
+            if (response.ok) {
+              const responseText = await response.text();
+              console.log("Response text:", responseText);
+
+              try {
+                timetables = JSON.parse(responseText);
+                console.log("Success with first endpoint:", timetables);
+              } catch (parseError) {
+                console.error("Error parsing JSON response:", parseError);
+                error = new Error("Failed to parse response as JSON");
+              }
+            } else {
+              const errorText = await response.text();
+              console.error("First endpoint error response:", errorText);
+              error = new Error(
+                `First endpoint failed: ${response.status} - ${errorText}`
+              );
+            }
+          } catch (firstError) {
+            console.warn(
+              "First endpoint failed, trying alternative:",
+              firstError
+            );
+            error = firstError;
+
+            // Try alternative endpoint
+            try {
+              const altUrl = `${API_BASE_URL}/sections/schedules/${sectionId}?scheduleType=regular`;
+              console.log("Trying alternative endpoint:", altUrl);
+
+              response = await fetch(altUrl, {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${authToken}`,
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                credentials: "include",
+              });
+
+              console.log(
+                "Alternative endpoint response status:",
+                response.status
+              );
+
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error(
+                  "Alternative endpoint error response:",
+                  errorText
+                );
+                throw new Error(
+                  `Both endpoints failed. Last status: ${response.status} - ${errorText}`
+                );
+              }
+
+              const responseText = await response.text();
+              console.log("Alternative endpoint response text:", responseText);
+
+              try {
+                timetables = JSON.parse(responseText);
+                console.log("Success with alternative endpoint:", timetables);
+                // If we got here, clear the previous error
+                error = null;
+              } catch (parseError) {
+                console.error("Error parsing JSON response:", parseError);
+                throw new Error("Failed to parse response as JSON");
+              }
+            } catch (altError) {
+              // If alternative endpoint also failed, throw the error
+              console.error("Alternative endpoint also failed:", altError);
+              throw error || altError;
+            }
+          }
+
+          // If we still have an error at this point, throw it
+          if (error) throw error;
+
+          // Handle different response formats
+          let timetableArray = [];
+          if (Array.isArray(timetables)) {
+            timetableArray = timetables;
+          } else if (timetables) {
+            if (timetables.data && Array.isArray(timetables.data)) {
+              timetableArray = timetables.data;
+            } else if (
+              timetables.schedules &&
+              Array.isArray(timetables.schedules)
+            ) {
+              timetableArray = timetables.schedules;
+            } else if (
+              timetables.results &&
+              Array.isArray(timetables.results)
+            ) {
+              timetableArray = timetables.results;
+            } else if (typeof timetables === "object") {
+              // Try to find any array in the response
+              for (const key in timetables) {
+                if (Array.isArray(timetables[key])) {
+                  timetableArray = timetables[key];
+                  break;
+                }
+              }
+            }
+          }
+
+          console.log(`Processing ${timetableArray.length} timetables`);
+          console.log("Timetable array:", timetableArray);
+
+          // Clear loading state first
+          container.innerHTML = "";
+
+          if (!timetableArray || timetableArray.length === 0) {
+            console.log(`No timetables found`);
+            container.innerHTML = `
+              <div class="no-timetables">
+                <p>Aucun emploi du temps disponible</p>
+                <button class="btn btn-primary mt-4" onclick="openTimetableUploadModal('regular')">
+                  <span class="material-icons">upload</span>
+                  Télécharger un emploi du temps
+                </button>
+              </div>`;
+            return;
+          }
+
+          let html = "";
+          timetableArray.forEach((timetable, index) => {
+            console.log(`Processing timetable ${index}:`, timetable);
+
+            // Generate a fallback URL if documentData is not available
+            let documentUrl = null;
+            if (timetable.documentData) {
+              try {
+                const binaryData = timetable.documentData.data;
+                // Determine mime type (default to application/octet-stream)
+                let mimeType = "application/octet-stream";
+
+                // Check for PNG signature
+                if (
+                  binaryData[0] === 137 &&
+                  binaryData[1] === 80 &&
+                  binaryData[2] === 78 &&
+                  binaryData[3] === 71
+                ) {
+                  mimeType = "image/png";
+                }
+                // Check for JPEG signature
+                else if (binaryData[0] === 255 && binaryData[1] === 216) {
+                  mimeType = "image/jpeg";
+                }
+                // Check for PDF signature
+                else if (
+                  binaryData[0] === 37 &&
+                  binaryData[1] === 80 &&
+                  binaryData[2] === 68 &&
+                  binaryData[3] === 70
+                ) {
+                  mimeType = "application/pdf";
+                }
+
+                const blob = new Blob([new Uint8Array(binaryData)], {
+                  type: mimeType,
+                });
+                documentUrl = URL.createObjectURL(blob);
+                console.log("Created document URL:", documentUrl);
+              } catch (error) {
+                console.error("Error creating Blob URL:", error);
+              }
+            } else if (timetable.documentUrl) {
+              documentUrl = timetable.documentUrl;
+            } else if (timetable.fileUrl) {
+              documentUrl = timetable.fileUrl;
+            }
+
+            html += `
+              <div class="timetable-item">
+                <div class="timetable-info">
+                  <h3 class="timetable-title">${
+                    timetable.title || timetable.name || "Sans titre"
+                  }</h3>
+                  ${
+                    timetable.description
+                      ? `<p class="timetable-description">${timetable.description}</p>`
+                      : ""
+                  }
+                  <div class="timetable-meta">
+                    ${
+                      timetable.academicYear
+                        ? `<span class="timetable-academic-year">Année: ${timetable.academicYear}</span>`
+                        : ""
+                    }
+                    ${
+                      timetable.semester
+                        ? `<span class="timetable-semester">Semestre: ${timetable.semester}</span>`
+                        : ""
+                    }
+                  </div>
+                </div>
+                <div class="timetable-actions">
+                  ${
+                    documentUrl
+                      ? `
+                      <button class="btn btn-sm btn-primary" onclick="window.open('${documentUrl}', '_blank')">
+                        <span class="material-icons">visibility</span>
+                        Voir
+                      </button>
+                      <button class="btn btn-sm btn-secondary" onclick="openInDocumentViewer('${documentUrl}', '${
+                          timetable.title || timetable.name || "Sans titre"
+                        }')">
+                        <span class="material-icons">open_in_new</span>
+                        Voir en page séparée
+                      </button>
+                      <a href="${documentUrl}" download class="btn btn-sm btn-secondary">
+                        <span class="material-icons">download</span>
+                        Télécharger
+                      </a>
+                    `
+                      : `
+                      <button class="btn btn-sm btn-disabled" disabled>
+                        <span class="material-icons">visibility_off</span>
+                        Document non disponible
+                      </button>
+                    `
+                  }
+                  <button class="btn btn-sm btn-danger" onclick="deleteTimetable('${
+                    timetable.id
+                  }', 'regular')">
+                    <span class="material-icons">delete</span>
+                    Supprimer
+                  </button>
+                </div>
+              </div>`;
+          });
+
+          console.log("Generated HTML:", html);
+          container.innerHTML = html;
+          console.log(`Finished loading timetables`);
+        } catch (error) {
+          console.error(`Error loading timetables:`, error);
+          container.innerHTML = `
+            <div class="error-message">
+              <p>Erreur lors du chargement des emplois du temps</p>
+              <p>${error.message || "Une erreur inconnue s'est produite"}</p>
+              <button class="btn btn-primary mt-4" onclick="loadTimetables('${sectionId}')">
+                <span class="material-icons">refresh</span>
+                Réessayer
+              </button>
+            </div>`;
+          // Only show notification if this is a genuine error, not just empty results
+          if (error.message !== "No timetables found") {
+            showNotification(
+              `Erreur lors du chargement des emplois du temps`,
+              "error"
+            );
+          }
+        }
+        console.log(`=== FINISHED LOAD TIMETABLES ===`);
+      }
+
+      async function viewTimetable(timetableId, documentUrl) {
+        try {
+          if (documentUrl) {
+            // If we have a Blob URL, open it directly
+            window.open(documentUrl, "_blank");
+          } else {
+            // Otherwise, try to fetch the timetable
+            const response = await fetch(
+              `${API_BASE_URL}/timetables/${timetableId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${authToken}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const timetable = await response.json();
+            if (timetable.fileUrl) {
+              window.open(timetable.fileUrl, "_blank");
+            } else {
+              throw new Error("No file URL available");
+            }
+          }
+        } catch (error) {
+          console.error("Error viewing timetable:", error);
+          showNotification(
+            "Erreur lors de l'affichage de l'emploi du temps",
+            "error"
+          );
+        }
+      }
+
+      function openTimetableUploadModal(type) {
+        const managementModal = document.getElementById(
+          "timetable-management-modal"
+        );
+        const uploadModal = document.getElementById("timetable-modal");
+        const title = document.getElementById("timetable-modal-title");
+        const typeInput = document.getElementById("timetable-type");
+
+        // Set the type and section ID
+        typeInput.value = type;
+        uploadModal.dataset.sectionId = managementModal.dataset.sectionId;
+
+        // Update title
+        title.textContent =
+          type === "regular"
+            ? "Télécharger un emploi du temps"
+            : "Télécharger un emploi des examens";
+
+        // Close the management modal first
+        managementModal.style.display = "none";
+
+        // Then show the upload modal
+        uploadModal.style.display = "block";
+      }
+
+      async function uploadTimetable(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData();
+        const sectionId =
+          document.getElementById("timetable-modal").dataset.sectionId;
+        const type = document.getElementById("timetable-type").value;
+        const title = document.getElementById("timetable-title").value;
+        const description = document.getElementById(
+          "timetable-description"
+        ).value;
+        const semester = document.getElementById("timetable-semester").value;
+        const academicYear = document.getElementById(
+          "timetable-academic-year"
+        ).value;
+        const file = document.getElementById("timetable-file").files[0];
+
+        // Get the save button for loading state
+        const saveButton = document.getElementById("save-timetable-btn");
+        const originalButtonText = saveButton.innerHTML;
+
+        // Validate required fields
+        if (!title || !sectionId || !file) {
+          showNotification(
+            "Veuillez remplir tous les champs obligatoires",
+            "error"
+          );
+          return;
+        }
+
+        // Ensure we have a valid schedule type
+        const scheduleType = type === "regular" ? "regular" : "exam";
+        if (!scheduleType) {
+          showNotification("Type d'emploi du temps invalide", "error");
+          return;
+        }
+
+        // Add each field individually to the FormData
+        formData.append("title", title);
+        formData.append("sectionId", sectionId);
+        if (description) formData.append("description", description);
+        formData.append("scheduleType", scheduleType); // Make sure this is set
+        if (academicYear) formData.append("academicYear", academicYear);
+        if (semester) formData.append("semester", semester);
+
+        // Add the file with the correct field name expected by the backend
+        formData.append("document", file);
+
+        // Show loading state
+        saveButton.disabled = true;
+        saveButton.innerHTML =
+          '<span class="material-icons spinner">refresh</span> Téléchargement...';
+
+        // Add a spinner style if not already present
+        if (!document.querySelector("style#spinner-style")) {
+          const spinnerStyle = document.createElement("style");
+          spinnerStyle.id = "spinner-style";
+          spinnerStyle.textContent = `
+            .spinner {
+              animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `;
+          document.head.appendChild(spinnerStyle);
+        }
+
+        try {
+          console.log("Uploading timetable with data:", {
+            title,
+            sectionId,
+            description,
+            scheduleType,
+            academicYear,
+            semester,
+            fileName: file.name,
+          });
+
+          const response = await fetch(
+            `${API_BASE_URL}/sections/schedules/${sectionId}/upload`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: formData,
+            }
+          );
+
+          // Parse the response first to check for any API errors
+          let responseData;
+          const responseText = await response.text();
+          try {
+            responseData = JSON.parse(responseText);
+          } catch (e) {
+            // If it's not JSON, just use the text
+            responseData = { message: responseText };
+          }
+
+          // Check if the response was successful
+          if (!response.ok) {
+            throw new Error(
+              Array.isArray(responseData.message)
+                ? responseData.message.join(", ")
+                : responseData.message ||
+                  `Error ${response.status}: ${response.statusText}`
+            );
+          }
+
+          // Operation was successful
+          console.log("Upload successful:", responseData);
+
+          // Close the modal first
+          const uploadModal = document.getElementById("timetable-modal");
+          uploadModal.style.display = "none";
+
+          // Reset the form
+          form.reset();
+          document.getElementById("selected-file").style.display = "none";
+
+          // Show success message and reload timetables
+          showNotification("Emploi du temps téléchargé avec succès", "success");
+
+          // Reload regular timetables
+          await loadTimetables(sectionId, "regular");
+        } catch (error) {
+          console.error("Error uploading timetable:", error);
+          showNotification(
+            error.message ||
+              "Erreur lors du téléchargement de l'emploi du temps",
+            "error"
+          );
+        } finally {
+          // Always restore the button state, even if there was an error
+          saveButton.disabled = false;
+          saveButton.innerHTML = originalButtonText;
+        }
+      }
+
+      // Add event listener for the timetable form
+      document.addEventListener("DOMContentLoaded", function () {
+        const timetableForm = document.getElementById("timetable-form");
+        if (timetableForm) {
+          timetableForm.addEventListener("submit", uploadTimetable);
+        }
+
+        // Add file input change handler
+        const fileInput = document.getElementById("timetable-file");
+        const selectedFile = document.getElementById("selected-file");
+        const selectedFileName = document.getElementById("selected-file-name");
+        const removeFileBtn = document.getElementById("selected-file-remove");
+
+        if (fileInput) {
+          fileInput.addEventListener("change", function () {
+            if (this.files.length > 0) {
+              selectedFileName.textContent = this.files[0].name;
+              selectedFile.style.display = "flex";
+            } else {
+              selectedFile.style.display = "none";
+            }
+          });
+        }
+
+        if (removeFileBtn) {
+          removeFileBtn.addEventListener("click", function () {
+            fileInput.value = "";
+            selectedFile.style.display = "none";
+          });
+        }
+      });
+
+      async function deleteTimetable(timetableId, type) {
+        if (
+          !confirm(`Êtes-vous sûr de vouloir supprimer cet emploi du temps ?`)
+        ) {
+          return;
+        }
+
+        // Get the button that was clicked
+        const clickedButton = event.target.closest("button");
+        const originalButtonHTML = clickedButton
+          ? clickedButton.innerHTML
+          : null;
+
+        // Show loading state on the button
+        if (clickedButton) {
+          clickedButton.disabled = true;
+          clickedButton.innerHTML =
+            '<span class="material-icons spinner">refresh</span> Suppression...';
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/timetables/${timetableId}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            // Try to parse error response
+            let errorMessage;
+            try {
+              const errorData = await response.json();
+              errorMessage =
+                errorData.message || `HTTP error! status: ${response.status}`;
+            } catch (e) {
+              errorMessage = `HTTP error! status: ${response.status}`;
+            }
+            throw new Error(errorMessage);
+          }
+
+          // Reload timetables
+          const sectionId = document.getElementById(
+            "timetable-management-modal"
+          ).dataset.sectionId;
+
+          showNotification("Emploi du temps supprimé avec succès", "success");
+
+          // Wait a moment before reloading to let the notification be visible
+          setTimeout(() => {
+            loadTimetables(sectionId, type);
+          }, 300);
+        } catch (error) {
+          console.error("Error deleting timetable:", error);
+          showNotification(
+            "Erreur lors de la suppression de l'emploi du temps: " +
+              error.message,
+            "error"
+          );
+
+          // Restore the button state on error
+          if (clickedButton) {
+            clickedButton.disabled = false;
+            clickedButton.innerHTML =
+              originalButtonHTML ||
+              '<span class="material-icons">delete</span> Supprimer';
+          }
+        }
+      }
+
+      // Add schedule management functions
+      async function openScheduleManagement(sectionId) {
+        const modal = document.getElementById("schedule-management-modal");
+        const schedulesList = document.getElementById("schedules-list");
+
+        // Show empty state instead of loading timetables automatically
+        schedulesList.innerHTML = `
+          <div class="empty">
+            <p>Aucun emploi du temps chargé</p>
+            <button class="btn btn-primary mt-4" onclick="loadSchedules('${sectionId}')">
+              <span class="material-icons">refresh</span>
+              Charger les emplois du temps
+            </button>
+          </div>`;
+
+        // Show the modal
+        modal.style.display = "block";
+
+        // Setup upload form - keep this part
+        setupScheduleUploadForm(sectionId);
+      }
+
+      // Add new function to load schedules on demand
+      async function loadSchedules(sectionId) {
+        const schedulesList = document.getElementById("schedules-list");
+
+        // Show loading state
+        schedulesList.innerHTML =
+          '<div class="loading">Chargement des emplois du temps...</div>';
+
+        try {
+          // Load schedules
+          const response = await fetch(
+            `${API_BASE_URL}/sections/schedules/${sectionId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to load schedules");
+          }
+
+          const schedules = await response.json();
+          displaySchedules(schedules, sectionId);
+        } catch (error) {
+          console.error("Error loading schedules:", error);
+          schedulesList.innerHTML =
+            '<div class="error">Erreur lors du chargement des emplois du temps</div>';
+        }
+      }
+
+      function displaySchedules(schedules, sectionId) {
+        const schedulesList = document.getElementById("schedules-list");
+
+        if (!schedules || schedules.length === 0) {
+          schedulesList.innerHTML =
+            '<div class="empty">Aucun emploi du temps trouvé</div>';
+          return;
+        }
+
+        schedulesList.innerHTML = schedules
+          .map(
+            (schedule) => `
+          <div class="schedule-item">
+            <div class="schedule-info">
+              <h4>${schedule.title}</h4>
+              <p><strong>Type:</strong> ${getScheduleTypeLabel(
+                schedule.scheduleType
+              )}</p>
+              <p><strong>Description:</strong> ${
+                schedule.description || "Aucune description"
+              }</p>
+              <p><strong>Créé le:</strong> ${new Date(
+                schedule.createdAt
+              ).toLocaleDateString()}</p>
+            </div>
+            <div class="schedule-actions">
+              <button class="btn-view" onclick="viewSchedule('${schedule.id}')">
+                <i class="fas fa-eye"></i> Voir
+              </button>
+              <button class="btn-download" onclick="downloadSchedule('${
+                schedule.id
+              }')">
+                <i class="fas fa-download"></i> Télécharger
+              </button>
+              <button class="btn-delete" onclick="deleteSchedule('${
+                schedule.id
+              }', '${sectionId}')">
+                <i class="fas fa-trash"></i> Supprimer
+              </button>
+            </div>
+          </div>
+        `
+          )
+          .join("");
+      }
+
+      function setupScheduleUploadForm(sectionId) {
+        const form = document.getElementById("schedule-upload-form");
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData();
+          formData.append(
+            "title",
+            document.getElementById("schedule-title").value
+          );
+          formData.append(
+            "scheduleType",
+            document.getElementById("schedule-type").value
+          );
+          formData.append(
+            "description",
+            document.getElementById("schedule-description").value
+          );
+          formData.append(
+            "document",
+            document.getElementById("schedule-file").files[0]
+          );
+
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/sections/schedules/${sectionId}/upload`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${authToken}`,
+                },
+                body: formData,
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to upload schedule");
+            }
+
+            // Refresh schedules list
+            openScheduleManagement(sectionId);
+
+            // Reset form
+            form.reset();
+
+            showMessage("Emploi du temps téléchargé avec succès", "success");
+          } catch (error) {
+            console.error("Error uploading schedule:", error);
+            showMessage("Erreur lors du téléchargement", "error");
+          }
+        };
+      }
+
+      function getScheduleTypeLabel(type) {
+        const labels = {
+          regular: "Emploi du temps régulier",
+          exam: "Emploi du temps d'examens",
+          special: "Emploi du temps spécial",
+        };
+        return labels[type] || type;
+      }
+
+      async function viewSchedule(scheduleId) {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/schedules/${scheduleId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to load schedule");
+          }
+
+          const schedule = await response.json();
+          window.open(schedule.documentUrl, "_blank");
+        } catch (error) {
+          console.error("Error viewing schedule:", error);
+          showMessage(
+            "Erreur lors de l'affichage de l'emploi du temps",
+            "error"
+          );
+        }
+      }
+
+      async function downloadSchedule(scheduleId) {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/schedules/${scheduleId}/download`,
+            {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to download schedule");
+          }
+
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `schedule-${scheduleId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } catch (error) {
+          console.error("Error downloading schedule:", error);
+          showMessage("Erreur lors du téléchargement", "error");
+        }
+      }
+
+      async function deleteSchedule(scheduleId, sectionId) {
+        if (
+          !confirm("Êtes-vous sûr de vouloir supprimer cet emploi du temps ?")
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/sections/schedules/${sectionId}/${scheduleId}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to delete schedule");
+          }
+
+          // Refresh schedules list
+          openScheduleManagement(sectionId);
+          showMessage("Emploi du temps supprimé avec succès", "success");
+        } catch (error) {
+          console.error("Error deleting schedule:", error);
+          showMessage("Erreur lors de la suppression", "error");
+        }
+      }
+
+      // Add event listener for schedule button
+      document.addEventListener("click", function (e) {
+        if (e.target.closest(".schedule-btn")) {
+          const sectionId = e.target.closest(".schedule-btn").dataset.id;
+          openScheduleManagement(sectionId);
+        }
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize the teacher assignment modal
+        const teacherAssignmentModal = document.getElementById(
+          "teacher-assignment-modal"
+        );
+        const closeTeacherAssignmentModal = document.getElementById(
+          "close-teacher-assignment-modal"
+        );
+
+        if (closeTeacherAssignmentModal) {
+          closeTeacherAssignmentModal.onclick = function () {
+            teacherAssignmentModal.style.display = "none";
+          };
+        }
+
+        // Add role selection change handler
+        const roleSelect = document.getElementById("teacher-role");
+        if (roleSelect) {
+          roleSelect.addEventListener("change", handleRoleSelectionChange);
+        }
+
+        // Initialize other components
+        initializeSectionManagement();
+      });
+
+      // Function to open a timetable in the document viewer page
+      function openInDocumentViewer(documentUrl, title) {
+        if (documentUrl) {
+          // Create URL for document viewer
+          let viewerUrl = "document-viewer.html?";
+
+          // Pass document URL as a parameter
+          viewerUrl += `url=${encodeURIComponent(documentUrl)}`;
+
+          // Add title if available
+          if (title) {
+            viewerUrl += `&title=${encodeURIComponent(title)}`;
+          }
+
+          // Add token for authentication
+          if (authToken) {
+            viewerUrl += `&token=${encodeURIComponent(authToken)}`;
+          }
+
+          // Add context as admin
+          viewerUrl += "&context=admin";
+
+          // Open in a new tab/window
+          window.open(viewerUrl, "_blank");
+        } else {
+          showNotification("Document non disponible", "error");
+        }
+      }
+
+      // Function to open all timetables in new pages
+      function openAllTimetablesInNewPages() {
+        console.log("Opening all timetables in new pages");
+
+        // Get the modal element to access the section ID
+        const modal = document.getElementById("timetable-management-modal");
+        if (!modal || !modal.dataset.sectionId) {
+          console.error("Modal or section ID not found");
+          showNotification("Erreur: Section non trouvée", "error");
+          return;
+        }
+
+        // Get the button that triggered this and show loading state
+        const button = event ? event.target.closest("button") : null;
+        const originalButtonHTML = button ? button.innerHTML : null;
+
+        if (button) {
+          button.disabled = true;
+          button.innerHTML =
+            '<span class="material-icons spinner">refresh</span> Chargement...';
+        }
+
+        const sectionId = modal.dataset.sectionId;
+        console.log(`Using section ID: ${sectionId}`);
+
+        // Fetch the timetables data directly - USING CORRECT URL FORMAT
+        // Note: The correct format is /sections/schedules/{sectionId} not /sections/{sectionId}/schedules
+        const url = `${API_BASE_URL}/sections/schedules/${sectionId}?type=regular`;
+        console.log(`Fetching timetables directly from: ${url}`);
+
+        fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+          })
+          .then((text) => {
+            console.log("Raw API response:", text);
+            try {
+              return JSON.parse(text);
+            } catch (e) {
+              console.error("Error parsing JSON:", e);
+              showNotification("Erreur de format de données", "error");
+              throw new Error("Invalid JSON response");
+            }
+          })
+          .then((timetables) => {
+            console.log("Timetables data:", timetables);
+
+            // Handle different response formats
+            let timetableArray = [];
+            if (Array.isArray(timetables)) {
+              timetableArray = timetables;
+            } else if (timetables) {
+              if (timetables.data && Array.isArray(timetables.data)) {
+                timetableArray = timetables.data;
+              } else if (
+                timetables.schedules &&
+                Array.isArray(timetables.schedules)
+              ) {
+                timetableArray = timetables.schedules;
+              } else if (
+                timetables.results &&
+                Array.isArray(timetables.results)
+              ) {
+                timetableArray = timetables.results;
+              } else if (typeof timetables === "object") {
+                // Try to find any array in the response
+                for (const key in timetables) {
+                  if (Array.isArray(timetables[key])) {
+                    timetableArray = timetables[key];
+                    break;
+                  }
+                }
+              }
+            }
+
+            console.log(`Found ${timetableArray.length} timetables to open`);
+
+            if (timetableArray.length === 0) {
+              showNotification("Aucun emploi du temps trouvé", "info");
+              // Restore button state
+              if (button) {
+                button.disabled = false;
+                button.innerHTML =
+                  originalButtonHTML || "Afficher tous dans de nouvelles pages";
+              }
+              return;
+            }
+
+            // Process each timetable
+            let openCount = 0;
+            let processedCount = 0;
+
+            // Show notification right away
+            showNotification(
+              `Traitement de ${timetableArray.length} emplois du temps...`,
+              "info"
+            );
+
+            timetableArray.forEach((timetable, index) => {
+              // Extract document data and create a blob URL
+              if (
+                timetable.documentData ||
+                timetable.documentUrl ||
+                timetable.fileUrl
+              ) {
+                let documentUrl = null;
+
+                if (timetable.documentData && timetable.documentData.data) {
+                  // Create blob URL from binary data
+                  try {
+                    const binaryData = timetable.documentData.data;
+                    // Determine mime type (default to application/octet-stream)
+                    let mimeType = "application/octet-stream";
+
+                    // Check for PNG signature
+                    if (
+                      binaryData[0] === 137 &&
+                      binaryData[1] === 80 &&
+                      binaryData[2] === 78 &&
+                      binaryData[3] === 71
+                    ) {
+                      mimeType = "image/png";
+                    }
+                    // Check for JPEG signature
+                    else if (binaryData[0] === 255 && binaryData[1] === 216) {
+                      mimeType = "image/jpeg";
+                    }
+                    // Check for PDF signature
+                    else if (
+                      binaryData[0] === 37 &&
+                      binaryData[1] === 80 &&
+                      binaryData[2] === 68 &&
+                      binaryData[3] === 70
+                    ) {
+                      mimeType = "application/pdf";
+                    }
+
+                    const blob = new Blob([new Uint8Array(binaryData)], {
+                      type: mimeType,
+                    });
+                    documentUrl = URL.createObjectURL(blob);
+                    console.log(
+                      `Created blob URL for ${timetable.title}:`,
+                      documentUrl
+                    );
+                  } catch (error) {
+                    console.error("Error creating blob URL:", error);
+                    processedCount++;
+                  }
+                } else if (timetable.documentUrl) {
+                  documentUrl = timetable.documentUrl;
+                } else if (timetable.fileUrl) {
+                  documentUrl = timetable.fileUrl;
+                }
+
+                if (documentUrl) {
+                  // Delay opening each window slightly to avoid popup blocking
+                  setTimeout(() => {
+                    console.log(
+                      `Opening timetable in new page: ${
+                        timetable.title || timetable.name || "Sans titre"
+                      }`
+                    );
+                    openInDocumentViewer(
+                      documentUrl,
+                      timetable.title || timetable.name || "Sans titre"
+                    );
+                    openCount++;
+                    processedCount++;
+
+                    // If all have been processed, restore button
+                    if (processedCount >= timetableArray.length) {
+                      if (button) {
+                        button.disabled = false;
+                        button.innerHTML =
+                          originalButtonHTML ||
+                          "Afficher tous dans de nouvelles pages";
+                      }
+
+                      // Update notification
+                      showNotification(
+                        `${openCount} emplois du temps ouverts`,
+                        "success"
+                      );
+                    }
+                  }, index * 300);
+                } else {
+                  processedCount++;
+                }
+              } else {
+                processedCount++;
+              }
+            });
+
+            // If nothing was opened or all were processed synchronously
+            if (openCount === 0 && processedCount >= timetableArray.length) {
+              showNotification(
+                "Aucun emploi du temps avec document trouvé",
+                "info"
+              );
+
+              // Restore button state
+              if (button) {
+                button.disabled = false;
+                button.innerHTML =
+                  originalButtonHTML || "Afficher tous dans de nouvelles pages";
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching timetables:", error);
+            showNotification(
+              "Erreur lors du chargement des emplois du temps: " +
+                error.message,
+              "error"
+            );
+
+            // Restore button state on error
+            if (button) {
+              button.disabled = false;
+              button.innerHTML =
+                originalButtonHTML || "Afficher tous dans de nouvelles pages";
+            }
+          });
+      }
+    </script>
+
+    <!-- Include the admin section utils -->
+    <script src="js/admin-section-utils.js"></script>
+    <!-- Include the timetable manager script -->
+    <script src="js/timetable-manager.js"></script>
+    <!-- Include the enhanced timetable viewer script -->
+    <script src="js/enhanced-timetable-viewer.js"></script>
+    <!-- Include the admin sections script -->
+    <script src="js/admin-sections.js"></script>
+    <!-- Include the improved renderSections function directly -->
+    <script src="js/sections-fix.js"></script>
+    <!-- Include the enhanced section responsables display -->
+    <script src="js/section-responsables.js"></script>
+    <!-- Include the section filters functionality -->
+    <script src="js/section-filters.js"></script>
+    <!-- Include the sections initialization script -->
+    <script src="js/admin-sections-init.js"></script>
+  </body>
+</html>
